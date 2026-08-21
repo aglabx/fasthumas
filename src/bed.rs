@@ -47,20 +47,18 @@ impl BedRecord {
 /// then by start coordinate.
 pub fn sort_bed_records(records: &mut [BedRecord]) {
     records.sort_by(|a, b| {
-        let a_key = if a.chrom.len() >= 3 { &a.chrom[3..] } else { &a.chrom[..] };
-        let b_key = if b.chrom.len() >= 3 { &b.chrom[3..] } else { &b.chrom[..] };
+        let a_key = if a.chrom.len() >= 3 {
+            &a.chrom[3..]
+        } else {
+            &a.chrom[..]
+        };
+        let b_key = if b.chrom.len() >= 3 {
+            &b.chrom[3..]
+        } else {
+            &b.chrom[..]
+        };
         a_key.cmp(b_key).then(a.start.cmp(&b.start))
     });
-}
-
-/// Write BED records to string, one per line.
-pub fn records_to_string(records: &[BedRecord]) -> String {
-    let mut out = String::new();
-    for r in records {
-        out.push_str(&r.to_bed9_string());
-        out.push('\n');
-    }
-    out
 }
 
 #[cfg(test)]
@@ -90,16 +88,37 @@ mod tests {
     fn test_sort() {
         let mut recs = vec![
             BedRecord {
-                chrom: "chr2".into(), start: 50, end: 100, name: "a".into(),
-                score: 1.0, strand: '+', thick_start: 50, thick_end: 100, color: Rgb(0,0,0),
+                chrom: "chr2".into(),
+                start: 50,
+                end: 100,
+                name: "a".into(),
+                score: 1.0,
+                strand: '+',
+                thick_start: 50,
+                thick_end: 100,
+                color: Rgb(0, 0, 0),
             },
             BedRecord {
-                chrom: "chr1".into(), start: 200, end: 300, name: "b".into(),
-                score: 2.0, strand: '+', thick_start: 200, thick_end: 300, color: Rgb(0,0,0),
+                chrom: "chr1".into(),
+                start: 200,
+                end: 300,
+                name: "b".into(),
+                score: 2.0,
+                strand: '+',
+                thick_start: 200,
+                thick_end: 300,
+                color: Rgb(0, 0, 0),
             },
             BedRecord {
-                chrom: "chr1".into(), start: 100, end: 200, name: "c".into(),
-                score: 3.0, strand: '+', thick_start: 100, thick_end: 200, color: Rgb(0,0,0),
+                chrom: "chr1".into(),
+                start: 100,
+                end: 200,
+                name: "c".into(),
+                score: 3.0,
+                strand: '+',
+                thick_start: 100,
+                thick_end: 200,
+                color: Rgb(0, 0, 0),
             },
         ];
         sort_bed_records(&mut recs);

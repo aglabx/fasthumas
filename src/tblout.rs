@@ -8,8 +8,6 @@ pub struct HmmHit {
     pub query_name: String,
     pub ali_from: u64,
     pub ali_to: u64,
-    pub env_from: u64,
-    pub env_to: u64,
     pub strand: char,
     pub score: f64,
 }
@@ -31,8 +29,8 @@ pub fn parse_tblout_line(line: &str) -> Option<HmmHit> {
     // nhmmer tblout: fields are 1-based
     let ali_from: u64 = fields[6].parse().ok()?;
     let ali_to: u64 = fields[7].parse().ok()?;
-    let env_from: u64 = fields[8].parse().ok()?;
-    let env_to: u64 = fields[9].parse().ok()?;
+    // fields[8]/fields[9] are envelope coordinates; this port always uses ali
+    // coordinates, matching how hmmer-run.sh invokes hmmertblout2bed.awk.
     let strand = fields[11].chars().next()?;
     let score: f64 = fields[13].parse().ok()?;
 
@@ -41,8 +39,6 @@ pub fn parse_tblout_line(line: &str) -> Option<HmmHit> {
         query_name,
         ali_from,
         ali_to,
-        env_from,
-        env_to,
         strand,
         score,
     })
@@ -76,14 +72,20 @@ pub fn hit_to_bed(hit: &HmmHit, threshold: f64) -> Option<BedRecord> {
     };
 
     // Threshold: score / length >= th
-    let ali_length = if end > start { end - start } else { return None };
+    let ali_length = if end > start {
+        end - start
+    } else {
+        return None;
+    };
     if ali_length == 0 {
         return None;
     }
 
     let score_per_len = hit.score / ali_length as f64;
     // Match AWK: sprintf("%.1f", score/aliLength) < th
-    let formatted: f64 = format!("{:.1}", score_per_len).parse().unwrap_or(score_per_len);
+    let formatted: f64 = format!("{:.1}", score_per_len)
+        .parse()
+        .unwrap_or(score_per_len);
     if formatted < threshold {
         return None;
     }
@@ -101,16 +103,6 @@ pub fn hit_to_bed(hit: &HmmHit, threshold: f64) -> Option<BedRecord> {
         thick_end: end,
         color,
     })
-}
-
-/// Parse all lines from tblout output into BedRecords.
-pub fn parse_tblout(text: &str, threshold: f64) -> Vec<BedRecord> {
-    text.lines()
-        .filter_map(|line| {
-            let hit = parse_tblout_line(line)?;
-            hit_to_bed(&hit, threshold)
-        })
-        .collect()
 }
 
 #[cfg(test)]
@@ -143,8 +135,6 @@ mod tests {
             query_name: "S1C3H1L.1".into(),
             ali_from: 1000,
             ali_to: 1171,
-            env_from: 998,
-            env_to: 1173,
             strand: '+',
             score: 120.5,
         };
@@ -161,8 +151,6 @@ mod tests {
             query_name: "Aa".into(),
             ali_from: 100,
             ali_to: 271,
-            env_from: 98,
-            env_to: 273,
             strand: '+',
             score: 10.0, // 10/171 = 0.058, way below 0.7
         };

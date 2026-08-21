@@ -15,8 +15,9 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
 
     let fasta_files = config.discover_fasta_files()?;
     info!(
-        "Found {} FASTA files, running {} parallel jobs with {} nhmmer threads each",
+        "Found {} FASTA files; {} CPU budget split into {} parallel jobs \u{00d7} {} nhmmer threads",
         fasta_files.len(),
+        config.total_threads,
         config.parallel_jobs,
         config.nhmmer_threads,
     );
@@ -24,22 +25,17 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(config.parallel_jobs)
         .build()
-        .map_err(|e| PipelineError::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            e.to_string(),
-        )))?;
+        .map_err(|e| PipelineError::Io(std::io::Error::other(e.to_string())))?;
 
     let errors: Vec<String> = pool.install(|| {
         fasta_files
             .par_iter()
-            .filter_map(|fasta| {
-                match process_one_file(config, fasta) {
-                    Ok(()) => None,
-                    Err(e) => {
-                        let msg = format!("{}: {}", fasta.display(), e);
-                        error!("{}", msg);
-                        Some(msg)
-                    }
+            .filter_map(|fasta| match process_one_file(config, fasta) {
+                Ok(()) => None,
+                Err(e) => {
+                    let msg = format!("{}: {}", fasta.display(), e);
+                    error!("{}", msg);
+                    Some(msg)
                 }
             })
             .collect()

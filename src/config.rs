@@ -55,10 +55,7 @@ impl Config {
         let pattern_str = pattern.to_string_lossy();
 
         let mut files: Vec<PathBuf> = glob::glob(&pattern_str)
-            .map_err(|e| PipelineError::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            )))?
+            .map_err(|e| PipelineError::Io(std::io::Error::other(e.to_string())))?
             .filter_map(|entry| entry.ok())
             .filter(|p| p.is_file())
             .collect();

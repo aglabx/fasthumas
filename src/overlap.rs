@@ -26,16 +26,18 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
 
     for rec in records.iter().skip(1) {
         // Check if this record overlaps with ANY record in the current cluster
-        let overlaps = cluster.iter().any(|c| {
-            c.chrom == rec.chrom && has_reciprocal_overlap(c, rec, 0.1)
-        });
+        let overlaps = cluster
+            .iter()
+            .any(|c| c.chrom == rec.chrom && has_reciprocal_overlap(c, rec, 0.1));
 
         if overlaps {
             cluster.push(rec.clone());
         } else {
             // Emit the max-score element from the cluster
             if let Some(best) = cluster.iter().max_by(|a, b| {
-                a.score.partial_cmp(&b.score).unwrap_or(std::cmp::Ordering::Equal)
+                a.score
+                    .partial_cmp(&b.score)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             }) {
                 result.push(best.clone());
             }
@@ -46,7 +48,9 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
 
     // Emit last cluster
     if let Some(best) = cluster.iter().max_by(|a, b| {
-        a.score.partial_cmp(&b.score).unwrap_or(std::cmp::Ordering::Equal)
+        a.score
+            .partial_cmp(&b.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
     }) {
         result.push(best.clone());
     }
@@ -107,7 +111,7 @@ pub fn near_dedup(records: &[BedRecord]) -> Vec<BedRecord> {
     for rec in records {
         let start = rec.start as i64;
         let end = rec.end as i64;
-        let length = (end - start) as i64;
+        let length = end - start;
         let score = rec.score;
 
         let start_near = (start - prev_start).abs() < 10;

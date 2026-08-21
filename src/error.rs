@@ -16,7 +16,4 @@ pub enum PipelineError {
 
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
-
-    #[error("parse error on line {line}: {message}")]
-    Parse { line: usize, message: String },
 }
