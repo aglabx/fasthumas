@@ -8,6 +8,15 @@ struct ColorRule {
     color: Rgb,
 }
 
+// ---------------------------------------------------------------------------
+// PROVENANCE: the color table below is NOT original to this repository. It is
+// transplanted from hmmertblout2bed.awk by Lev I. Uralsky (Institute of
+// Molecular Genetics, Moscow) -- https://github.com/enigene/hmmertblout2bed --
+// including the later additions made in fedorrik/HumAS-HMMER_for_AnVIL.
+// Neither upstream repository carries a license file, so the MIT grant in
+// LICENSE does not extend to this table. See NOTICE.md before reusing it.
+// ---------------------------------------------------------------------------
+
 /// All 218+ color patterns from hmmertblout2bed.awk, in source order.
 /// AWK uses IGNORECASE=1, so all patterns are compiled case-insensitive.
 /// First match wins.

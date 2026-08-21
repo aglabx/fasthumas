@@ -167,5 +167,7 @@ and HMMER:
 
 The Rust code in this repository is MIT licensed — see [LICENSE](LICENSE).
 
-The color table transplanted into `src/color.rs` is derived from upstream work that carries **no license
-file**; see [NOTICE.md](NOTICE.md) before redistributing or using it commercially.
+The MIT grant covers this repository's Rust code. It does **not** extend to the alpha-satellite color
+table transplanted into `src/color.rs`, which is derived from upstream work that carries no license file
+(the header of that file says so too). See [NOTICE.md](NOTICE.md) before redistributing it or using it
+commercially.
