@@ -8,18 +8,26 @@ use crate::overlap::filter_overlaps;
 use crate::tblout::{hit_to_bed, parse_tblout_line};
 
 /// Run nhmmer with --tblout piped to stdout, parse hits on the fly,
-/// apply score threshold, sort, and filter overlaps.
+/// apply the score threshold, sort, and filter overlaps.
+///
+/// `dbsize_mb` is passed through as `-Z`. The pipeline searches one sequence
+/// per nhmmer call but pins the database size to the whole input, so E-values
+/// — and therefore which hits clear nhmmer's own reporting threshold — do not
+/// depend on how the input happened to be divided.
 ///
 /// Returns filtered, sorted BED records.
 pub fn run_nhmmer(
     hmm_path: &Path,
     fasta_path: &Path,
     cpu_threads: usize,
+    dbsize_mb: f64,
     score_threshold: f64,
 ) -> Result<Vec<BedRecord>, PipelineError> {
     let mut child = Command::new("nhmmer")
         .arg("--cpu")
         .arg(cpu_threads.to_string())
+        .arg("-Z")
+        .arg(format!("{}", dbsize_mb))
         .arg("--notextw")
         .arg("--noali")
         .arg("--tblout")
@@ -72,7 +80,7 @@ pub fn run_nhmmer(
         });
     }
 
-    // Sort by chrom (from 4th char) + start, matching `sort -k 1.4,1 -k 2,2n`
+    // Sort by sequence name + start, matching `sort -k 1.4,1 -k 2,2n`
     sort_bed_records(&mut records);
 
     // 3-stage overlap filtering

@@ -2,75 +2,154 @@ use std::path::{Path, PathBuf};
 
 use crate::error::PipelineError;
 
+/// Everything the CLI collects, before validation.
+#[derive(Debug, Clone)]
+pub struct Options {
+    pub input: PathBuf,
+    pub hmm: PathBuf,
+    pub output: Option<PathBuf>,
+    pub threads: usize,
+    pub threads_per_job: usize,
+    pub temp_dir: Option<PathBuf>,
+    pub keep_temp: bool,
+    pub score_threshold: f64,
+}
+
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub input_dir: PathBuf,
-    pub hor_hmm: PathBuf,
-    pub sf_hmm: PathBuf,
-    pub output_dir: PathBuf,
-    pub total_threads: usize,
-    pub parallel_jobs: usize,
-    pub nhmmer_threads: usize,
+    /// The FASTA file to annotate. May hold any number of sequences.
+    pub input: PathBuf,
+    /// The HMM profile to scan with — HOR or SF, one per run.
+    pub hmm: PathBuf,
+    /// The BED file to write.
+    pub output: PathBuf,
+    /// Total CPU budget across all concurrent nhmmer jobs.
+    pub threads: usize,
+    /// Threads handed to a single nhmmer job.
+    pub threads_per_job: usize,
+    /// Directory the private scratch directory is created in.
+    pub temp_base: PathBuf,
+    pub keep_temp: bool,
     pub score_threshold: f64,
 }
 
 impl Config {
-    pub fn new(
-        input_dir: PathBuf,
-        hor_hmm: PathBuf,
-        sf_hmm: PathBuf,
-        output_dir: PathBuf,
-        total_threads: usize,
-        score_threshold: f64,
-    ) -> Result<Self, PipelineError> {
-        if !input_dir.is_dir() {
-            return Err(PipelineError::NoInputFiles(input_dir));
+    pub fn new(o: Options) -> Result<Self, PipelineError> {
+        if !o.input.is_file() {
+            return Err(PipelineError::InputNotFile(o.input));
         }
-        if !hor_hmm.exists() {
-            return Err(PipelineError::HmmNotFound(hor_hmm));
-        }
-        if !sf_hmm.exists() {
-            return Err(PipelineError::HmmNotFound(sf_hmm));
+        if !o.hmm.exists() {
+            return Err(PipelineError::HmmNotFound(o.hmm));
         }
 
-        // Auto-compute: target ~4 nhmmer threads per job
-        let nhmmer_threads = 4.min(total_threads);
-        let parallel_jobs = (total_threads / nhmmer_threads).max(1);
+        let stem = o.input.file_stem().unwrap_or_default().to_os_string();
+        let output = match o.output {
+            // No -o: write `<input stem>.bed` into the current directory.
+            None => with_extension(&PathBuf::from(&stem)),
+            // -o names a directory: keep the input stem as the file name.
+            Some(p) if p.is_dir() || ends_with_separator(&p) => with_extension(&p.join(&stem)),
+            // -o is the path prefix itself.
+            Some(p) => with_extension(&p),
+        };
+
+        let temp_base = o.temp_dir.unwrap_or_else(|| match output.parent() {
+            Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
+            _ => PathBuf::from("."),
+        });
 
         Ok(Config {
-            input_dir,
-            hor_hmm,
-            sf_hmm,
-            output_dir,
-            total_threads,
-            parallel_jobs,
-            nhmmer_threads,
-            score_threshold,
+            input: o.input,
+            hmm: o.hmm,
+            output,
+            threads: o.threads.max(1),
+            threads_per_job: o.threads_per_job.max(1),
+            temp_base,
+            keep_temp: o.keep_temp,
+            score_threshold: o.score_threshold,
         })
     }
 
-    /// Discover all .fa files in input_dir.
-    pub fn discover_fasta_files(&self) -> Result<Vec<PathBuf>, PipelineError> {
-        let pattern = self.input_dir.join("*.fa");
-        let pattern_str = pattern.to_string_lossy();
-
-        let mut files: Vec<PathBuf> = glob::glob(&pattern_str)
-            .map_err(|e| PipelineError::Io(std::io::Error::other(e.to_string())))?
-            .filter_map(|entry| entry.ok())
-            .filter(|p| p.is_file())
-            .collect();
-
-        if files.is_empty() {
-            return Err(PipelineError::NoInputFiles(self.input_dir.clone()));
-        }
-
-        files.sort();
-        Ok(files)
+    /// A scratch directory this process owns outright, so that deleting it at
+    /// the end cannot touch anything the user put there.
+    pub fn temp_dir_path(&self) -> PathBuf {
+        self.temp_base
+            .join(format!("humas-hmmer-tmp-{}", std::process::id()))
     }
 
-    /// Get output path for a given FASTA file and track name.
-    pub fn output_path(&self, fasta: &Path, track: &str) -> PathBuf {
-        let stem = fasta.file_stem().unwrap_or_default().to_string_lossy();
-        self.output_dir.join(format!("{}-vs-{}.bed", track, stem))
+    /// Split the CPU budget over the sequences at hand: never more jobs than
+    /// sequences, and whatever threads that leaves go back into each job.
+    pub fn job_layout(&self, sequences: usize) -> (usize, usize) {
+        let sequences = sequences.max(1);
+        let jobs = (self.threads / self.threads_per_job).clamp(1, sequences);
+        let threads_per_job = (self.threads / jobs).max(1);
+        (jobs, threads_per_job)
+    }
+}
+
+/// `res/chm13` becomes `res/chm13.bed`; an explicit `.bed` is left alone.
+fn with_extension(prefix: &Path) -> PathBuf {
+    if prefix
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("bed"))
+    {
+        return prefix.to_path_buf();
+    }
+    let mut name = prefix.to_path_buf().into_os_string();
+    name.push(".bed");
+    PathBuf::from(name)
+}
+
+fn ends_with_separator(p: &Path) -> bool {
+    p.as_os_str()
+        .to_string_lossy()
+        .ends_with(std::path::MAIN_SEPARATOR)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config(threads: usize, per_job: usize) -> Config {
+        Config {
+            input: PathBuf::from("chm13.fa"),
+            hmm: PathBuf::from("hor.hmm"),
+            output: PathBuf::from("chm13.bed"),
+            threads,
+            threads_per_job: per_job,
+            temp_base: PathBuf::from("."),
+            keep_temp: false,
+            score_threshold: 0.7,
+        }
+    }
+
+    #[test]
+    fn test_output_gets_a_bed_extension() {
+        assert_eq!(
+            with_extension(&PathBuf::from("res/chm13")),
+            PathBuf::from("res/chm13.bed")
+        );
+        assert_eq!(
+            with_extension(&PathBuf::from("res/chm13.bed")),
+            PathBuf::from("res/chm13.bed")
+        );
+    }
+
+    #[test]
+    fn test_job_layout_full_budget() {
+        // 96 threads, 4 per job, plenty of sequences: 24 jobs of 4.
+        assert_eq!(config(96, 4).job_layout(34), (24, 4));
+    }
+
+    #[test]
+    fn test_job_layout_gives_spare_threads_back() {
+        // Only 10 sequences, so 10 jobs share all 96 threads.
+        assert_eq!(config(96, 4).job_layout(10), (10, 9));
+        // A single sequence gets the whole budget.
+        assert_eq!(config(96, 4).job_layout(1), (1, 96));
+    }
+
+    #[test]
+    fn test_job_layout_never_zero() {
+        assert_eq!(config(1, 4).job_layout(34), (1, 1));
     }
 }

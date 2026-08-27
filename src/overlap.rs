@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 /// Stage 1: bedmap --max-element --fraction-either 0.1
 ///
-/// Groups overlapping intervals (≥10% reciprocal overlap) and keeps the
+/// Groups overlapping intervals (>=10% overlap of either element) and keeps the
 /// highest-scoring element from each group.
 /// Input MUST be sorted by chrom + start.
 pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
@@ -13,19 +13,12 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
 
     let mut result: Vec<BedRecord> = Vec::new();
 
-    // Sweep-line: for each record, find all overlapping records in the current
-    // cluster and keep the one with the highest score.
-    // A cluster is a set of records that have ≥10% reciprocal overlap with
-    // at least one other record in the cluster.
-
-    // Simple approach: for each record, check if it overlaps with the current
-    // best in the cluster. If yes, keep the higher-scoring one. If no overlap,
-    // emit the current best and start a new cluster.
-
+    // Sweep-line: for each record, check whether it overlaps any record in the
+    // current cluster. If it does, join the cluster; otherwise emit the
+    // cluster's max-scoring element and start a new one.
     let mut cluster: Vec<BedRecord> = vec![records[0].clone()];
 
     for rec in records.iter().skip(1) {
-        // Check if this record overlaps with ANY record in the current cluster
         let overlaps = cluster
             .iter()
             .any(|c| c.chrom == rec.chrom && has_reciprocal_overlap(c, rec, 0.1));
@@ -33,12 +26,7 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
         if overlaps {
             cluster.push(rec.clone());
         } else {
-            // Emit the max-score element from the cluster
-            if let Some(best) = cluster.iter().max_by(|a, b| {
-                a.score
-                    .partial_cmp(&b.score)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            }) {
+            if let Some(best) = max_by_score(&cluster) {
                 result.push(best.clone());
             }
             cluster.clear();
@@ -46,22 +34,23 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
         }
     }
 
-    // Emit last cluster
-    if let Some(best) = cluster.iter().max_by(|a, b| {
-        a.score
-            .partial_cmp(&b.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    }) {
+    if let Some(best) = max_by_score(&cluster) {
         result.push(best.clone());
     }
 
     result
 }
 
-/// Check if two intervals have ≥ frac reciprocal overlap.
-/// "fraction-either" means: overlap / min(len_a, len_b) >= frac
-/// Actually bedmap --fraction-either means: overlap >= frac * len_a AND overlap >= frac * len_b
-/// i.e., overlap must be at least frac of BOTH intervals.
+fn max_by_score(records: &[BedRecord]) -> Option<&BedRecord> {
+    records.iter().max_by(|a, b| {
+        a.score
+            .partial_cmp(&b.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    })
+}
+
+/// Check if two intervals overlap by at least `frac` of *either* element,
+/// matching `bedmap --fraction-either` (an OR, not a reciprocal AND).
 fn has_reciprocal_overlap(a: &BedRecord, b: &BedRecord, frac: f64) -> bool {
     let overlap_start = a.start.max(b.start);
     let overlap_end = a.end.min(b.end);
@@ -74,8 +63,6 @@ fn has_reciprocal_overlap(a: &BedRecord, b: &BedRecord, frac: f64) -> bool {
     if len_a == 0.0 || len_b == 0.0 {
         return false;
     }
-    // fraction-either: overlap >= frac * len_a OR overlap >= frac * len_b
-    // bedops bedmap --fraction-either: the overlap must be >= frac of EITHER element
     overlap / len_a >= frac || overlap / len_b >= frac
 }
 
@@ -95,55 +82,45 @@ pub fn exact_dedup(records: &[BedRecord]) -> Vec<BedRecord> {
 
 /// Stage 3: near-dedup (from overlap_filter.py).
 ///
-/// Sequential pass: if start or end is within ±10bp of previous record,
-/// keep the one with higher score (tie-break by length).
+/// Sequential pass: if start or end is within +/-10 bp of the previous kept
+/// record, keep the one with the higher score (tie-break by length).
+///
+/// The Python original carried its `prev_*` state across the whole file, which
+/// was safe only because every input file held one chromosome. This port takes
+/// multi-sequence FASTA, so the comparison is reset at each sequence boundary;
+/// otherwise the first record of a sequence could be dropped because of where
+/// the *previous* sequence happened to end.
 pub fn near_dedup(records: &[BedRecord]) -> Vec<BedRecord> {
-    if records.is_empty() {
-        return vec![];
-    }
-
     let mut result: Vec<BedRecord> = Vec::new();
-    let mut prev_start: i64 = -100;
-    let mut prev_end: i64 = -100;
-    let mut prev_score: f64 = 0.0;
-    let mut prev_length: i64 = 0;
+    // chrom, start, end, score, length
+    let mut prev: Option<(&str, i64, i64, f64, i64)> = None;
 
     for rec in records {
         let start = rec.start as i64;
         let end = rec.end as i64;
         let length = end - start;
-        let score = rec.score;
 
-        let start_near = (start - prev_start).abs() < 10;
-        let end_near = (end - prev_end).abs() < 10;
-
-        if start_near || end_near {
-            // Scores nearly equal (within 0.01)?
-            if (prev_score - score).abs() < 0.01 {
-                // Same score → keep longer
-                if length > prev_length {
+        if let Some((prev_chrom, prev_start, prev_end, prev_score, prev_length)) = prev {
+            if prev_chrom == rec.chrom
+                && ((start - prev_start).abs() < 10 || (end - prev_end).abs() < 10)
+            {
+                if (prev_score - rec.score).abs() < 0.01 {
+                    // Same score: keep the longer interval.
+                    if length > prev_length {
+                        result.pop();
+                    } else {
+                        continue;
+                    }
+                } else if rec.score > prev_score {
                     result.pop();
-                    // fall through to add current
                 } else {
                     continue;
                 }
-            } else if score > prev_score {
-                // Current is better → replace previous
-                if !result.is_empty() {
-                    result.pop();
-                }
-                // fall through to add current
-            } else {
-                // Previous is better → skip current
-                continue;
             }
         }
 
         result.push(rec.clone());
-        prev_start = start;
-        prev_end = end;
-        prev_score = score;
-        prev_length = length;
+        prev = Some((&rec.chrom, start, end, rec.score, length));
     }
 
     result
@@ -159,21 +136,7 @@ pub fn filter_overlaps(records: &[BedRecord]) -> Vec<BedRecord> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bed::Rgb;
-
-    fn make_rec(chrom: &str, start: u64, end: u64, name: &str, score: f64) -> BedRecord {
-        BedRecord {
-            chrom: chrom.into(),
-            start,
-            end,
-            name: name.into(),
-            score,
-            strand: '+',
-            thick_start: start,
-            thick_end: end,
-            color: Rgb(0, 0, 0),
-        }
-    }
+    use crate::bed::test_record as make_rec;
 
     #[test]
     fn test_bedmap_max_non_overlapping() {
@@ -211,7 +174,7 @@ mod tests {
     fn test_near_dedup_keeps_higher_score() {
         let recs = vec![
             make_rec("chr1", 100, 270, "a", 50.0),
-            make_rec("chr1", 105, 272, "b", 80.0), // within ±10bp
+            make_rec("chr1", 105, 272, "b", 80.0), // within +/-10bp
         ];
         let result = near_dedup(&recs);
         assert_eq!(result.len(), 1);
@@ -227,5 +190,18 @@ mod tests {
         let result = near_dedup(&recs);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name, "b");
+    }
+
+    /// Records on different sequences must never suppress each other, however
+    /// close their coordinates happen to be.
+    #[test]
+    fn test_near_dedup_resets_across_sequences() {
+        let recs = vec![
+            make_rec("chr1", 100, 270, "a", 80.0),
+            make_rec("chr2", 100, 270, "b", 50.0), // identical coords, lower score
+        ];
+        let result = near_dedup(&recs);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[1].chrom, "chr2");
     }
 }

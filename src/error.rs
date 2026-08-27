@@ -8,8 +8,17 @@ pub enum PipelineError {
     #[error("nhmmer not found in PATH. Install HMMER: http://hmmer.org/")]
     NhmmerNotFound,
 
-    #[error("no .fa files found in {0}")]
-    NoInputFiles(PathBuf),
+    #[error("hmmemit not found in PATH. Install HMMER: http://hmmer.org/")]
+    HmmemitNotFound,
+
+    #[error("hmmemit failed for {path}: {message}")]
+    HmmemitFailed { path: PathBuf, message: String },
+
+    #[error("input FASTA not found, or is not a regular file: {0}")]
+    InputNotFile(PathBuf),
+
+    #[error("no sequences found in {0}")]
+    NoSequences(PathBuf),
 
     #[error("HMM profile not found: {0}")]
     HmmNotFound(PathBuf),

@@ -20,6 +20,11 @@ pub struct BedRecord {
     pub thick_start: u64,
     pub thick_end: u64,
     pub color: Rgb,
+    /// 1-based model coordinates of the alignment, straight from nhmmer's
+    /// tblout. Not written to the BED; the junction pass uses them to work out
+    /// how many model positions were trimmed off each end.
+    pub hmm_from: u64,
+    pub hmm_to: u64,
 }
 
 impl BedRecord {
@@ -43,22 +48,34 @@ impl BedRecord {
     }
 }
 
-/// Sort BED records by chrom (from 4th char onward to match `sort -k 1.4,1`),
-/// then by start coordinate.
+/// Sort BED records by sequence name, then by start coordinate.
+///
+/// The original pipeline used `sort -k 1.4,1 -k 2,2n`, i.e. it compared names
+/// from the 4th character on — a shortcut that assumes a `chr` prefix and that
+/// only ever ran on single-chromosome files, where the name key is a no-op.
+/// This port takes multi-sequence FASTA, so it compares the whole name; for
+/// uniformly prefixed names the resulting order is the same, and unlike the
+/// original it cannot interleave records from different sequences (which the
+/// order-dependent filtering stages downstream rely on).
 pub fn sort_bed_records(records: &mut [BedRecord]) {
-    records.sort_by(|a, b| {
-        let a_key = if a.chrom.len() >= 3 {
-            &a.chrom[3..]
-        } else {
-            &a.chrom[..]
-        };
-        let b_key = if b.chrom.len() >= 3 {
-            &b.chrom[3..]
-        } else {
-            &b.chrom[..]
-        };
-        a_key.cmp(b_key).then(a.start.cmp(&b.start))
-    });
+    records.sort_by(|a, b| a.chrom.cmp(&b.chrom).then(a.start.cmp(&b.start)));
+}
+
+#[cfg(test)]
+pub(crate) fn test_record(chrom: &str, start: u64, end: u64, name: &str, score: f64) -> BedRecord {
+    BedRecord {
+        chrom: chrom.into(),
+        start,
+        end,
+        name: name.into(),
+        score,
+        strand: '+',
+        thick_start: start,
+        thick_end: end,
+        color: Rgb(0, 0, 0),
+        hmm_from: 1,
+        hmm_to: end - start,
+    }
 }
 
 #[cfg(test)]
@@ -67,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_bed9_format() {
-        let rec = BedRecord {
+        let r = BedRecord {
             chrom: "chr1".to_string(),
             start: 100,
             end: 200,
@@ -77,9 +94,11 @@ mod tests {
             thick_start: 100,
             thick_end: 200,
             color: Rgb(171, 171, 7),
+            hmm_from: 1,
+            hmm_to: 100,
         };
         assert_eq!(
-            rec.to_bed9_string(),
+            r.to_bed9_string(),
             "chr1\t100\t200\tS1C3H1L.1\t123.4\t+\t100\t200\t171,171,7"
         );
     }
@@ -87,39 +106,9 @@ mod tests {
     #[test]
     fn test_sort() {
         let mut recs = vec![
-            BedRecord {
-                chrom: "chr2".into(),
-                start: 50,
-                end: 100,
-                name: "a".into(),
-                score: 1.0,
-                strand: '+',
-                thick_start: 50,
-                thick_end: 100,
-                color: Rgb(0, 0, 0),
-            },
-            BedRecord {
-                chrom: "chr1".into(),
-                start: 200,
-                end: 300,
-                name: "b".into(),
-                score: 2.0,
-                strand: '+',
-                thick_start: 200,
-                thick_end: 300,
-                color: Rgb(0, 0, 0),
-            },
-            BedRecord {
-                chrom: "chr1".into(),
-                start: 100,
-                end: 200,
-                name: "c".into(),
-                score: 3.0,
-                strand: '+',
-                thick_start: 100,
-                thick_end: 200,
-                color: Rgb(0, 0, 0),
-            },
+            test_record("chr2", 50, 100, "a", 1.0),
+            test_record("chr1", 200, 300, "b", 1.0),
+            test_record("chr1", 100, 200, "c", 1.0),
         ];
         sort_bed_records(&mut recs);
         assert_eq!(recs[0].chrom, "chr1");
@@ -127,5 +116,22 @@ mod tests {
         assert_eq!(recs[1].chrom, "chr1");
         assert_eq!(recs[1].start, 200);
         assert_eq!(recs[2].chrom, "chr2");
+    }
+
+    /// Sequence names of different shapes must still group cleanly, which the
+    /// old `chrom[3..]` key could not guarantee.
+    #[test]
+    fn test_sort_groups_mixed_names() {
+        let mut recs = vec![
+            test_record("scaffold_2", 10, 20, "a", 1.0),
+            test_record("chr1", 30, 40, "b", 1.0),
+            test_record("scaffold_2", 5, 8, "c", 1.0),
+            test_record("chr1", 10, 20, "d", 1.0),
+        ];
+        sort_bed_records(&mut recs);
+        let names: Vec<&str> = recs.iter().map(|r| r.chrom.as_str()).collect();
+        assert_eq!(names, vec!["chr1", "chr1", "scaffold_2", "scaffold_2"]);
+        assert_eq!(recs[0].start, 10);
+        assert_eq!(recs[2].start, 5);
     }
 }
