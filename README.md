@@ -33,7 +33,14 @@ whole-file `nhmmer` call took 62 minutes against 26 for the split run.
 
 ## Install
 
-Requires a Rust toolchain and HMMER ≥ 3.3 on `PATH` — both `nhmmer` and `hmmemit` are used.
+Requires a Rust toolchain and **HMMER ≥ 3.4** on `PATH` — both `nhmmer` and `hmmemit` are used.
+
+3.4 is not optional. nhmmer guesses the alphabet of its target from the first few thousand residues and
+a low-complexity start defeats that guess: the human telomere, `TAACCCTAACCCT...`, uses only T, A and C,
+each equally valid as an amino acid, so nhmmer refuses the file outright. In T2T-CHM13 that hits chr22
+and chrY, whose leading telomere runs past 4 kb. This port passes `--dna` to settle the alphabet, and
+that flag only reaches the target from 3.4 on; under 3.3.2 it is accepted and ignored, and those two
+chromosomes still fail with `Invalid alphabet type in target for nhmmer`.
 
 ```bash
 git clone https://github.com/aglabx/humas_hmmer
@@ -66,17 +73,27 @@ results/chm13_sf.bed
 | `--hmm` | — | The HMM profile to scan with |
 | `-o`, `--output` | input file stem | Output path; `.bed` is appended unless already there. An existing directory means "put it in here" |
 | `-t`, `--threads` | `48` | Total CPU budget across all concurrent jobs |
-| `--threads-per-job` | `4` | Threads per `nhmmer` job; `threads / this` jobs run at once |
+| `--threads-per-job` | `4` | Sets how many jobs run at once: `threads / this` |
 | `--temp-dir` | output directory | Where the scratch directory is created |
 | `--keep-temp` | off | Keep the scratch directory instead of deleting it |
 | `--score-threshold` | `0.7` | Minimum score-to-length ratio for a hit to be kept |
 
 Set `RUST_LOG=debug` for per-sequence detail; the default level is `info`.
 
-`-t` is a budget, not a per-process setting: with the defaults, `-t 96` runs 24 `nhmmer` jobs of 4
-threads each. If the input has fewer sequences than that, the spare threads go back into each job.
-Lower `--threads-per-job` for more concurrency, raise it to cut peak memory — each running job holds
-one sequence's records, so memory scales with the number of jobs, not with the assembly.
+`-t` is a budget, not a per-process setting. Threads are handed to each sequence **in proportion to its
+length**, because sequences are wildly uneven: among chr1's 13 alpha-satellite fields one 4.5 Mb array
+holds 86 % of the residues, and an equal share leaves the whole run waiting on that one starved job. Two
+bounds keep the split honest — the share is normalised over the longest `threads / threads-per-job`
+sequences, the heaviest set that can run at once, and no sequence is given more threads than it has work
+for, since nhmmer reads a target in ¼ Mb blocks and hands one block to a worker.
+
+On those 13 fields at `-t 96` that is worth roughly a factor of two: 70 s against 149 s for an equal
+share, and better than 79 s for the best hand-tuned `--threads-per-job` we could find. Output is
+identical either way; only the scheduling changes.
+
+`--threads-per-job` now only sets how many jobs run at once. Lower it for more concurrency, raise it to
+cut peak memory — each running job holds one sequence's records, so memory scales with the number of
+jobs, not with the assembly.
 
 Every job is given `-Z` set to the *whole* input's size, so E-values, and with them which hits clear
 nhmmer's own reporting threshold, do not depend on how the input was divided. Splitting is an
@@ -88,6 +105,28 @@ and only if the run succeeds; a failed run leaves it behind and says where.
 One caveat for assemblies made of many small contigs: each job pays the cost of loading the HMM profile,
 about 30 s for the HOR profile. Thousands of short sequences will spend a visible share of the run
 loading the same profile over and over.
+
+### What to feed it
+
+Give it the alpha-satellite regions, **all of them in one FASTA**, one record per region. Not a
+directory of files, which is what the original pipeline wants, and not the whole genome.
+
+Cutting to alpha satellite saves the scan from grinding through sequence that cannot contain any: on
+chr1, alpha satellite is 5.2 Mb of 248 Mb. Keeping the regions together in one file is what lets the
+tool run them concurrently — hand it a single whole chromosome and there is one sequence, so one job,
+and `nhmmer`'s own threading over a single target scales poorly (96 threads bought 5.5× over 4 on
+chr1, not 24×).
+
+The regions can be cut straight from a CenSat annotation — the `hor`, `dhor` and `mon` classes are the
+alpha satellite; `ct` is chromosome arm, and `hsat`/`bsat`/`gsat` are other satellite families.
+
+Whole chromosomes do work, and with `--dna` they no longer fail on telomeric starts, but two things are
+worth knowing. Annotation inside the regions is the same either way — re-running chr1 both ways, 30 457
+of ~30 550 records are identical down to the model name and score. What differs sits at the edges: a
+whole chromosome also finds alpha satellite outside the annotated regions (86 records on chr1), while a
+cut region loses the flanking context its first and last monomers would have had, which moves a handful
+of records at each boundary. If those edges matter, cut the regions with a couple of hundred bases of
+margin and trim the output back afterwards.
 
 ### Output
 
@@ -234,7 +273,7 @@ pipeline run on the same input with the same profile.
 
 | Check | State |
 |---|---|
-| Unit tests (39) | ✅ `cargo test` |
+| Unit tests (41) | ✅ `cargo test` |
 | Plus strand vs. bash pipeline — SF profile, 2.1 Mb CENP-B region, 12 518 records | ✅ identical record for record |
 | Plus strand vs. original pipeline — HOR profile, 8 313 records | ✅ identical but for 1 record, where two equally-scoring models tie |
 | Minus strand vs. original pipeline — 4 255 records | ⛔ differs by design: one base wider at each end, the original being 2 bp short |
@@ -262,13 +301,13 @@ position 171, for instance, `A` appears 89 times and `C` 86 times out of 642.
 ## Development
 
 ```bash
-cargo test        # 39 unit tests, no nhmmer required
+cargo test        # 41 unit tests, no nhmmer required
 cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 ```
 
 Tests cover BED9 formatting and sorting, tblout parsing and ±strand coordinate conversion, the score
-threshold, output path construction, the CPU budget split, FASTA splitting and interval extraction,
+threshold, output path construction, the proportional thread plan, FASTA splitting and interval extraction,
 `hmmemit` output parsing, the junction pass on both strands including recurrence and deletions, color
 lookup, and all three overlap stages.
 

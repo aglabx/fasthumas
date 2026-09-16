@@ -65,15 +65,17 @@ fn run_in(config: &Config, temp_dir: &Path) -> Result<(), PipelineError> {
     // Pin nhmmer's database size to the whole input so that splitting it does
     // not shift E-values, and with them which hits get reported at all.
     let dbsize_mb = (split.residues as f64 / 1.0e6).max(1.0e-6);
-    let (jobs, threads_per_job) = config.job_layout(n);
+    let lengths: Vec<u64> = split.seqs.iter().map(|s| s.len).collect();
+    let plan = config.plan(&lengths);
 
     info!(
-        "{}: {} sequences, {:.1} Mb; {} concurrent jobs x {} nhmmer threads",
+        "{}: {} sequences, {:.1} Mb; {} concurrent jobs, {}-{} nhmmer threads each by sequence length",
         config.input.display(),
         n,
         dbsize_mb,
-        jobs,
-        threads_per_job
+        plan.jobs,
+        plan.threads.iter().min().copied().unwrap_or(0),
+        plan.threads.iter().max().copied().unwrap_or(0),
     );
 
     let consensus = Consensus::from_profile(&config.hmm)?;
@@ -85,42 +87,50 @@ fn run_in(config: &Config, temp_dir: &Path) -> Result<(), PipelineError> {
     );
 
     let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(jobs)
+        .num_threads(plan.jobs)
         .build()
         .map_err(|e| PipelineError::Io(std::io::Error::other(e.to_string())))?;
 
     // --- annotate every sequence, describing junctions but not acting yet ---
-    let outcomes: Vec<Result<Pending, String>> = pool.install(|| {
-        split
-            .seqs
+    //
+    // Longest first: the run cannot finish before its biggest sequence does, so
+    // that one should never be left until the end.
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&i| std::cmp::Reverse(lengths[i]));
+
+    let outcomes: Vec<(usize, Result<Pending, String>)> = pool.install(|| {
+        order
             .par_iter()
-            .enumerate()
-            .map(|(i, seq)| {
-                annotate(
+            .map(|&i| {
+                let seq = &split.seqs[i];
+                let outcome = annotate(
                     config,
                     temp_dir,
                     i,
                     seq,
-                    threads_per_job,
+                    plan.threads[i],
                     dbsize_mb,
                     &consensus,
                 )
-                .map_err(|e| format!("{}: {}", seq.name, e))
+                .map_err(|e| format!("{}: {}", seq.name, e));
+                (i, outcome)
             })
             .collect()
     });
 
-    let mut pendings: Vec<Pending> = Vec::with_capacity(n);
+    // Back into input order, which is the order the records are written in.
+    let mut slots: Vec<Option<Pending>> = (0..n).map(|_| None).collect();
     let mut failures: Vec<String> = Vec::new();
-    for outcome in outcomes {
+    for (i, outcome) in outcomes {
         match outcome {
-            Ok(p) => pendings.push(p),
+            Ok(pending) => slots[i] = Some(pending),
             Err(message) => {
                 error!("{}", message);
                 failures.push(message);
             }
         }
     }
+    let pendings: Vec<Pending> = slots.into_iter().flatten().collect();
     if !failures.is_empty() {
         return Err(PipelineError::NhmmerFailed {
             path: config.input.clone(),

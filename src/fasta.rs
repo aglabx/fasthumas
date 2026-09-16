@@ -11,6 +11,8 @@ pub struct SplitSeq {
     pub name: String,
     /// Single-sequence FASTA in the temporary directory.
     pub path: PathBuf,
+    /// Residues in this sequence, which is what the work of scanning it costs.
+    pub len: u64,
 }
 
 #[derive(Debug)]
@@ -44,9 +46,13 @@ pub fn split_fasta(input: &Path, dir: &Path) -> Result<Split, PipelineError> {
             let mut w = BufWriter::new(File::create(&path)?);
             writeln!(w, "{}", line)?;
             writer = Some(w);
-            seqs.push(SplitSeq { name, path });
+            seqs.push(SplitSeq { name, path, len: 0 });
         } else if let Some(w) = writer.as_mut() {
-            residues += line.trim_end().len() as u64;
+            let n = line.trim_end().len() as u64;
+            residues += n;
+            if let Some(last) = seqs.last_mut() {
+                last.len += n;
+            }
             writeln!(w, "{}", line)?;
         }
         // Anything before the first header is not part of a sequence.
@@ -141,6 +147,7 @@ mod tests {
         assert_eq!(split.seqs[0].name, "chr1");
         assert_eq!(split.seqs[1].name, "chr2");
         assert_eq!(split.residues, 12);
+        assert_eq!((split.seqs[0].len, split.seqs[1].len), (8, 4));
 
         // The header must survive verbatim, description and all.
         let first = fs::read_to_string(&split.seqs[0].path).unwrap();
