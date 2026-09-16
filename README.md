@@ -108,25 +108,18 @@ loading the same profile over and over.
 
 ### What to feed it
 
-Give it the alpha-satellite regions, **all of them in one FASTA**, one record per region. Not a
-directory of files, which is what the original pipeline wants, and not the whole genome.
+Give it the alpha-satellite regions, **all of them in one FASTA**, one record per region — not a
+directory of files, which is what the original pipeline wants.
 
-Cutting to alpha satellite saves the scan from grinding through sequence that cannot contain any: on
-chr1, alpha satellite is 5.2 Mb of 248 Mb. Keeping the regions together in one file is what lets the
-tool run them concurrently — hand it a single whole chromosome and there is one sequence, so one job,
-and `nhmmer`'s own threading over a single target scales poorly (96 threads bought 5.5× over 4 on
-chr1, not 24×).
+Cutting to alpha satellite saves the scan from sequence that cannot contain any: on chr1 that is 5.2 Mb
+out of 248 Mb. Keeping the regions in one file is what lets them run concurrently — a whole chromosome
+is a single sequence, so a single job, and `nhmmer`'s own threading over one target scales poorly.
 
-The regions can be cut straight from a CenSat annotation — the `hor`, `dhor` and `mon` classes are the
-alpha satellite; `ct` is chromosome arm, and `hsat`/`bsat`/`gsat` are other satellite families.
+The regions can be cut straight from a CenSat annotation: `hor`, `dhor` and `mon` are the alpha
+satellite; `ct` is chromosome arm, and `hsat`/`bsat`/`gsat` are other satellite families.
 
-Whole chromosomes do work, and with `--dna` they no longer fail on telomeric starts, but two things are
-worth knowing. Annotation inside the regions is the same either way — re-running chr1 both ways, 30 457
-of ~30 550 records are identical down to the model name and score. What differs sits at the edges: a
-whole chromosome also finds alpha satellite outside the annotated regions (86 records on chr1), while a
-cut region loses the flanking context its first and last monomers would have had, which moves a handful
-of records at each boundary. If those edges matter, cut the regions with a couple of hundred bases of
-margin and trim the output back afterwards.
+A whole genome works too, and is a reasonable input if that is more convenient — expect the first or
+last monomer of a field to sometimes come out differently.
 
 ### Output
 
