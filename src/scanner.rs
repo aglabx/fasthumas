@@ -97,7 +97,7 @@ impl MasterProfile {
                 let scan_end = (end_idx + 2).min(n);
 
                 let mut h = vec![0.0f32; l + 1];
-                let mut e = vec![0.0f32; l + 1];
+                let mut e = vec![-99999.0f32; l + 1];
                 let gap_open = -5.0f32;
                 let gap_ext = -0.6f32;
 
@@ -110,12 +110,12 @@ impl MasterProfile {
                 for pos_0 in scan_start..scan_end {
                     let b = seq_indices[pos_0];
                     let mut prev_h = 0.0f32;
-                    let mut f = 0.0f32;
+                    let mut f = -99999.0f32;
 
                     for i in 1..=l {
                         let match_sc = self.pssm[i - 1][b];
-                        let curr_e = (h[i - 1] + gap_open).max(e[i - 1] + gap_ext);
-                        e[i - 1] = curr_e;
+                        let curr_e = (h[i] + gap_open).max(e[i] + gap_ext);
+                        e[i] = curr_e;
 
                         let from_diag = prev_h + match_sc;
                         let new_h = (0.0f32).max(from_diag).max(curr_e).max(f);
@@ -548,6 +548,50 @@ mod tests {
         assert_eq!(base_to_idx(b'T'), 3);
         assert_eq!(base_to_idx(b'a'), 0);
         assert_eq!(base_to_idx(b'N'), 0);
+    }
+
+    #[test]
+    fn test_affine_sw_single_insertion() {
+        // Reviewer's exact test case:
+        // Profile: ACGT (len 4), match = +6, mismatch = -20
+        // Target sequence: ACAGT (len 5, insertion of A between C and G)
+        // Expected score: 4 * 6 - 5 = 19
+        let l = 4;
+        let mut pssm = vec![[-20.0f32; 4]; l];
+        pssm[0][0] = 6.0; // A
+        pssm[1][1] = 6.0; // C
+        pssm[2][2] = 6.0; // G
+        pssm[3][3] = 6.0; // T
+
+        let target = b"ACAGT";
+        let seq_indices: Vec<usize> = target.iter().map(|&b| base_to_idx(b)).collect();
+
+        let gap_open = -5.0f32;
+        let gap_ext = -0.6f32;
+
+        let mut h = vec![0.0f32; l + 1];
+        let mut e = vec![-99999.0f32; l + 1];
+
+        for &b in &seq_indices {
+            let mut prev_h = 0.0f32;
+            let mut f = -99999.0f32;
+
+            for i in 1..=l {
+                let match_sc = pssm[i - 1][b];
+                let curr_e = (h[i] + gap_open).max(e[i] + gap_ext);
+                e[i] = curr_e;
+
+                let from_diag = prev_h + match_sc;
+                let new_h = (0.0f32).max(from_diag).max(curr_e).max(f);
+                prev_h = h[i];
+                h[i] = new_h;
+
+                f = (new_h + gap_open).max(f + gap_ext);
+            }
+        }
+
+        // Final score for matching all 4 bases with 1 gap opening:
+        assert_eq!(h[l], 19.0f32, "Recurrence with 1 insertion must yield exactly 19.0");
     }
 
     #[test]
