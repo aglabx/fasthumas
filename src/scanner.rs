@@ -77,6 +77,57 @@ impl MasterProfile {
     }
 
     /// Fast parallel scan of the sequence using the master profile to find candidate monomer end positions (1-based).
+    /// Advances a single column of the Gotoh affine Smith-Waterman recurrence.
+    ///
+    /// Rolling buffers `h` and `e` are updated in place for target nucleotide index `b`.
+    /// Returns the updated score at the end of the profile `h[l]`.
+    #[inline(always)]
+    pub fn step_dp(
+        &self,
+        b: usize,
+        h: &mut [f32],
+        e: &mut [f32],
+        gap_open: f32,
+        gap_ext: f32,
+    ) -> f32 {
+        let l = self.length;
+        let mut prev_h = 0.0f32;
+        let mut f = -99999.0f32;
+
+        for i in 1..=l {
+            let match_sc = self.pssm[i - 1][b];
+            let curr_e = (h[i] + gap_open).max(e[i] + gap_ext);
+            e[i] = curr_e;
+
+            let from_diag = prev_h + match_sc;
+            let new_h = (0.0f32).max(from_diag).max(curr_e).max(f);
+            prev_h = h[i];
+            h[i] = new_h;
+
+            f = (new_h + gap_open).max(f + gap_ext);
+        }
+
+        h[l]
+    }
+
+    /// Aligns a sequence against the profile using the exact production DP recurrence,
+    /// returning the peak score attained at the profile end.
+    pub fn align_sequence(&self, seq_indices: &[usize], gap_open: f32, gap_ext: f32) -> f32 {
+        let l = self.length;
+        let mut h = vec![0.0f32; l + 1];
+        let mut e = vec![-99999.0f32; l + 1];
+        let mut max_sc = 0.0f32;
+
+        for &b in seq_indices {
+            let sc = self.step_dp(b, &mut h, &mut e, gap_open, gap_ext);
+            if sc > max_sc {
+                max_sc = sc;
+            }
+        }
+
+        max_sc
+    }
+
     pub fn find_monomer_ends(&self, seq_indices: &[usize]) -> Vec<usize> {
         let l = self.length;
         let n = seq_indices.len();
@@ -109,23 +160,7 @@ impl MasterProfile {
 
                 for pos_0 in scan_start..scan_end {
                     let b = seq_indices[pos_0];
-                    let mut prev_h = 0.0f32;
-                    let mut f = -99999.0f32;
-
-                    for i in 1..=l {
-                        let match_sc = self.pssm[i - 1][b];
-                        let curr_e = (h[i] + gap_open).max(e[i] + gap_ext);
-                        e[i] = curr_e;
-
-                        let from_diag = prev_h + match_sc;
-                        let new_h = (0.0f32).max(from_diag).max(curr_e).max(f);
-                        prev_h = h[i];
-                        h[i] = new_h;
-
-                        f = (new_h + gap_open).max(f + gap_ext);
-                    }
-
-                    let curr_sc = h[l];
+                    let curr_sc = self.step_dp(b, &mut h, &mut e, gap_open, gap_ext);
                     let curr_pos = pos_0 + 1; // 1-based coordinate
 
                     if p1_sc >= 35.0 && p1_sc >= p2_sc && p1_sc >= curr_sc {
@@ -138,6 +173,7 @@ impl MasterProfile {
                     p1_pos = curr_pos;
                     p1_sc = curr_sc;
                 }
+
 
                 if p1_sc >= 35.0 && p1_sc >= p2_sc && p1_pos > start_idx && p1_pos <= end_idx {
                     chunk_peaks.push((p1_pos, p1_sc));
@@ -555,7 +591,7 @@ mod tests {
         // Reviewer's exact test case:
         // Profile: ACGT (len 4), match = +6, mismatch = -20
         // Target sequence: ACAGT (len 5, insertion of A between C and G)
-        // Expected score: 4 * 6 - 5 = 19
+        // Analytical score: 4 matches * (+6.0) + gap_open(-5.0) = 19.0 (a 1-bp insertion only incurs opening penalty)
         let l = 4;
         let mut pssm = vec![[-20.0f32; 4]; l];
         pssm[0][0] = 6.0; // A
@@ -563,36 +599,51 @@ mod tests {
         pssm[2][2] = 6.0; // G
         pssm[3][3] = 6.0; // T
 
+        let master = MasterProfile { length: l, pssm };
         let target = b"ACAGT";
         let seq_indices: Vec<usize> = target.iter().map(|&b| base_to_idx(b)).collect();
 
         let gap_open = -5.0f32;
         let gap_ext = -0.6f32;
 
-        let mut h = vec![0.0f32; l + 1];
-        let mut e = vec![-99999.0f32; l + 1];
+        // Directly exercises production MasterProfile::step_dp via align_sequence:
+        let score = master.align_sequence(&seq_indices, gap_open, gap_ext);
+        assert_eq!(
+            score, 19.0f32,
+            "Production DP recurrence with 1-bp insertion must yield exactly 19.0"
+        );
+    }
 
-        for &b in &seq_indices {
-            let mut prev_h = 0.0f32;
-            let mut f = -99999.0f32;
+    #[test]
+    fn test_find_monomer_ends_synthetic() {
+        // Representative 171-bp alpha-satellite monomer consensus
+        let raw_consensus = b"AATTTCAGCTGACTAAACAGTGATTTTTGTACTCTTTGCTCGAGTATTTTGGATCCCGTCTAGCTAACGCTTGTTTTGTGTGGGGTGTGAGCTTCGCTTCCCAATTCTTTATCCAGTATATTTGGACACCCATTCCAGCTACACATTATTTGCAGTGTGTATTTGGACACCTTT";
+        let consensus_171 = &raw_consensus[..171];
+        assert_eq!(consensus_171.len(), 171);
 
-            for i in 1..=l {
-                let match_sc = pssm[i - 1][b];
-                let curr_e = (h[i] + gap_open).max(e[i] + gap_ext);
-                e[i] = curr_e;
 
-                let from_diag = prev_h + match_sc;
-                let new_h = (0.0f32).max(from_diag).max(curr_e).max(f);
-                prev_h = h[i];
-                h[i] = new_h;
-
-                f = (new_h + gap_open).max(f + gap_ext);
-            }
+        let l = 171;
+        let mut pssm = vec![[-10.0f32; 4]; l];
+        for (i, &b) in consensus_171.iter().enumerate() {
+            pssm[i][base_to_idx(b)] = 3.0;
         }
 
-        // Final score for matching all 4 bases with 1 gap opening:
-        assert_eq!(h[l], 19.0f32, "Recurrence with 1 insertion must yield exactly 19.0");
+        let master = MasterProfile { length: l, pssm };
+
+        // Construct a target sequence with two consecutive 171-bp monomers
+        let mut target = Vec::with_capacity(342);
+        target.extend_from_slice(consensus_171);
+        target.extend_from_slice(consensus_171);
+        let seq_indices: Vec<usize> = target.iter().map(|&b| base_to_idx(b)).collect();
+
+        let peaks = master.find_monomer_ends(&seq_indices);
+        assert_eq!(peaks.len(), 2, "Expected exactly two monomer end peaks");
+        assert_eq!(peaks[0], 171, "First monomer peak must end at 171 bp");
+        assert_eq!(peaks[1], 342, "Second monomer peak must end at 342 bp");
     }
+
+
+
 
     #[test]
     fn test_scan_test_fa_if_present() {
