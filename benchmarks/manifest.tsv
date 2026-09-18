@@ -1,0 +1,13 @@
+# FastHumAS Benchmark Reference Assemblies Manifest
+# Machine: aglab0 (Dual AMD EPYC 9654, 192 vCPUs, 2.9 TB RAM)
+# HMM Profiles:
+#   AS-HORs-hmmer3.3.2-120124.hmm (1,963 models, MD5: 4c642b44df914a47bed2cd3d0998f8e6)
+#   AS-SFs-hmmer3.0.290621.hmm    (39 models,    MD5: b7c211e2e72edfbe9f9068a5432f4025)
+assembly_id	species	source_accession_path	num_seqs	total_bp	total_mb	fasta_md5
+T2T-CHM13_v2.0	Homo sapiens	GCF_009914755.1_T2T-CHM13v2.0_genomic.fna	24	3117275501	3117.28	9621f8e9e8cbf0d2c020677714195ac3
+T2T-HG002_mat	Homo sapiens	hg002v1.1.mat.fasta	23	3051512984	3051.51	775f6a83cc50f5689d1eee13d174c287
+T2T-RPE1_hap1	Homo sapiens	RPE1v1.1.hap1.fasta	23	3064047955	3064.05	559a7c50fff9b98b54e3ecc6c076ab9d
+Chimpanzee_mPanTro3	Pan troglodytes	mPanTro3.cur.20231122.fasta	24	3034919468	3034.92	eabd9fe92e047df44a00cf7875ffd0a5
+Bonobo_mPanPan1	Pan paniscus	mPanPan1.mat.cur.20231122.fasta	32	3210032406	3210.03	4835b2f77eff7502f7769f90e09c214c
+Gorilla_mGorGor1	Gorilla gorilla	mGorGor1.mat.cur.20231122.fasta	225	3554709948	3554.71	9774bd1b822d4712e24bd9167346a657
+Orangutan_mPonPyg2	Pongo pygmaeus	mPonPyg2.hap1.cur.20231122.fasta	24	3171515765	3171.52	80efd784bf13e99382ddcd474a4ce047

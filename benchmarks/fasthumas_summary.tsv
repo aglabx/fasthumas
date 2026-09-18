@@ -1,0 +1,2 @@
+genome	species	assembly_path	wall_time	user_sec	sys_sec	max_rss_kb	hor_sf_records	hor_records	sf_records
+T2T-CHM13_v2.0	Homo sapiens	/mnt/data/t2t/CHM13/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna	38:54.85	218857.06	122.99	31049924	488754	429212	488695

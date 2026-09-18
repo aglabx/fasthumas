@@ -1,0 +1,12 @@
+[2026-09-18T16:46:41Z INFO  fasthumas::pipeline] /mnt/data/t2t/CHM13/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna: loaded 24 sequences, 3117.28 Mb in 32.61s
+[2026-09-18T16:46:41Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: loaded 1963 models (1278 unique names) in 0.29s
+[2026-09-18T17:23:10Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: in-memory scan completed in 2188.98s
+[2026-09-18T17:23:10Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: junctions: 30717 gaps <= 3 bp, 19753 accounted for by trimming, 0 unresolved; sides: 6279 by consensus, 4500 by recurring variant, 8974 left alone; 15503 bases returned
+[2026-09-18T17:23:11Z INFO  fasthumas::pipeline] 488754 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-CHM13_v2.0.AS-HOR+SF.bed
+[2026-09-18T17:23:11Z INFO  fasthumas::pipeline] 429212 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-CHM13_v2.0.AS-HOR.bed
+[2026-09-18T17:23:11Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: loaded 39 models (39 unique names) in 0.01s
+[2026-09-18T17:25:02Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: in-memory scan completed in 110.85s
+[2026-09-18T17:25:02Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: junctions: 62723 gaps <= 3 bp, 53605 accounted for by trimming, 0 unresolved; sides: 5030 by consensus, 29930 by recurring variant, 18645 left alone; 43370 bases returned
+[2026-09-18T17:25:02Z INFO  fasthumas::pipeline] 488695 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-CHM13_v2.0.AS-SF.bed
+[2026-09-18T17:25:03Z INFO  fasthumas::pipeline] 488695 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-CHM13_v2.0.AS-strand.bed
+[2026-09-18T17:25:03Z INFO  fasthumas::pipeline] Combined HOR+SF pipeline completed in 2334.52s
