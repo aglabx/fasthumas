@@ -112,6 +112,7 @@ impl MasterProfile {
 
     /// Aligns a sequence against the profile using the exact production DP recurrence,
     /// returning the peak score attained at the profile end.
+    #[allow(dead_code)]
     pub fn align_sequence(&self, seq_indices: &[usize], gap_open: f32, gap_ext: f32) -> f32 {
         let l = self.length;
         let mut h = vec![0.0f32; l + 1];
@@ -128,6 +129,7 @@ impl MasterProfile {
         max_sc
     }
 
+    #[allow(clippy::needless_range_loop)]
     pub fn find_monomer_ends(&self, seq_indices: &[usize]) -> Vec<usize> {
         let l = self.length;
         let n = seq_indices.len();
@@ -136,7 +138,7 @@ impl MasterProfile {
         }
 
         const CHUNK_SIZE: usize = 256 * 1024;
-        let num_chunks = (n + CHUNK_SIZE - 1) / CHUNK_SIZE;
+        let num_chunks = n.div_ceil(CHUNK_SIZE);
 
         let raw_peaks: Vec<(usize, f32)> = (0..num_chunks)
             .into_par_iter()
@@ -163,17 +165,19 @@ impl MasterProfile {
                     let curr_sc = self.step_dp(b, &mut h, &mut e, gap_open, gap_ext);
                     let curr_pos = pos_0 + 1; // 1-based coordinate
 
-                    if p1_sc >= 35.0 && p1_sc >= p2_sc && p1_sc >= curr_sc {
-                        if p1_pos > start_idx && p1_pos <= end_idx {
-                            chunk_peaks.push((p1_pos, p1_sc));
-                        }
+                    if p1_sc >= 35.0
+                        && p1_sc >= p2_sc
+                        && p1_sc >= curr_sc
+                        && p1_pos > start_idx
+                        && p1_pos <= end_idx
+                    {
+                        chunk_peaks.push((p1_pos, p1_sc));
                     }
 
                     p2_sc = p1_sc;
                     p1_pos = curr_pos;
                     p1_sc = curr_sc;
                 }
-
 
                 if p1_sc >= 35.0 && p1_sc >= p2_sc && p1_pos > start_idx && p1_pos <= end_idx {
                     chunk_peaks.push((p1_pos, p1_sc));
@@ -621,7 +625,6 @@ mod tests {
         let consensus_171 = &raw_consensus[..171];
         assert_eq!(consensus_171.len(), 171);
 
-
         let l = 171;
         let mut pssm = vec![[-10.0f32; 4]; l];
         for (i, &b) in consensus_171.iter().enumerate() {
@@ -641,9 +644,6 @@ mod tests {
         assert_eq!(peaks[0], 171, "First monomer peak must end at 171 bp");
         assert_eq!(peaks[1], 342, "Second monomer peak must end at 342 bp");
     }
-
-
-
 
     #[test]
     fn test_scan_test_fa_if_present() {

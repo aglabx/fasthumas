@@ -68,13 +68,8 @@ pub fn annotate_sequences(
     let pendings: Vec<Pending> = seqs
         .par_iter()
         .map(|seq| {
-            let records = scan_sequence_in_memory(
-                &seq.name,
-                &seq.seq,
-                &coll,
-                &master,
-                score_threshold,
-            );
+            let records =
+                scan_sequence_in_memory(&seq.name, &seq.seq, &coll, &master, score_threshold);
 
             let (candidates, stats) = junction::candidates(&records, &consensus, &POLICY);
             let mut sides = Vec::new();
@@ -222,7 +217,14 @@ pub fn annotate_sequences_legacy(
                     let _ = fs::remove_file(&seq.path);
                 }
 
-                (i, Ok(Pending { records, sides, stats }))
+                (
+                    i,
+                    Ok(Pending {
+                        records,
+                        sides,
+                        stats,
+                    }),
+                )
             })
             .collect()
     });
@@ -241,14 +243,16 @@ pub fn annotate_sequences_legacy(
     if !failures.is_empty() {
         return Err(PipelineError::NhmmerFailed {
             path: config.input.clone(),
-            message: format!("{} sequence(s) failed in nhmmer:\n{}", failures.len(), failures.join("\n")),
+            message: format!(
+                "{} sequence(s) failed in nhmmer:\n{}",
+                failures.len(),
+                failures.join("\n")
+            ),
         });
     }
 
-    for slot in slots {
-        if let Some(p) = slot {
-            pendings.push(p);
-        }
+    for p in slots.into_iter().flatten() {
+        pendings.push(p);
     }
 
     let mut tally = Tally::default();
@@ -318,7 +322,10 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
         fs::create_dir_all(&config.temp_base)?;
         let temp_dir = config.temp_dir_path();
         fs::create_dir_all(&temp_dir)?;
-        info!("Running in --legacy mode with nhmmer backend (temp dir: {})", temp_dir.display());
+        info!(
+            "Running in --legacy mode with nhmmer backend (temp dir: {})",
+            temp_dir.display()
+        );
         (None, Some(temp_dir))
     } else {
         let start_io = std::time::Instant::now();
@@ -343,7 +350,10 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
     };
 
     let res = match config.mode {
-        RunMode::Single { ref hmm, ref output } => {
+        RunMode::Single {
+            ref hmm,
+            ref output,
+        } => {
             let (records, _) = annotate(hmm)?;
             write_bed_file(output, &records)?;
             info!(
@@ -354,7 +364,11 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
             );
             Ok(())
         }
-        RunMode::Combined { ref hor, ref sf, ref prefix } => {
+        RunMode::Combined {
+            ref hor,
+            ref sf,
+            ref prefix,
+        } => {
             if let Some(ref hor_path) = hor {
                 let (hor_records, _) = annotate(hor_path)?;
 
@@ -391,7 +405,11 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
                     })
                     .collect();
                 write_bed_file(&strand_path_out, &strand_records)?;
-                info!("{} records -> {}", strand_records.len(), strand_path_out.display());
+                info!(
+                    "{} records -> {}",
+                    strand_records.len(),
+                    strand_path_out.display()
+                );
             }
 
             info!(
