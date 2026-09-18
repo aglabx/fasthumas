@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::error::PipelineError;
 
 /// One sequence of the input, written out as its own FASTA file.
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct SplitSeq {
     /// Name as nhmmer will report it: the header up to the first whitespace.
@@ -15,6 +16,7 @@ pub struct SplitSeq {
     pub len: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Split {
     pub seqs: Vec<SplitSeq>,
@@ -27,6 +29,7 @@ pub struct Split {
 /// The input is never held in memory: it is copied line by line into the
 /// current output file. Headers are written through unchanged, so nhmmer
 /// reports the same target names it would for the undivided file.
+#[allow(dead_code)]
 pub fn split_fasta(input: &Path, dir: &Path) -> Result<Split, PipelineError> {
     let reader = BufReader::new(File::open(input)?);
 
@@ -75,6 +78,7 @@ pub fn split_fasta(input: &Path, dir: &Path) -> Result<Split, PipelineError> {
 /// The file is streamed once and only the requested bases are retained, so a
 /// handful of junction gaps costs a pass over the file rather than a copy of
 /// the chromosome in memory.
+#[allow(dead_code)]
 pub fn read_intervals(
     path: &Path,
     intervals: &[(u64, u64)],
@@ -117,6 +121,70 @@ pub fn read_intervals(
     }
 
     Ok(out)
+}
+
+/// One FASTA sequence stored completely in memory.
+#[derive(Debug, Clone)]
+pub struct MemoryFastaSeq {
+    pub name: String,
+    pub seq: Vec<u8>,
+}
+
+/// Read all sequences from a FASTA file directly into memory.
+pub fn read_fasta_in_memory(path: &Path) -> Result<Vec<MemoryFastaSeq>, PipelineError> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+
+    let mut seqs = Vec::new();
+    let mut name = String::new();
+    let mut seq = Vec::new();
+
+    for line in reader.lines() {
+        let line = line?;
+        if let Some(header) = line.strip_prefix('>') {
+            if !name.is_empty() {
+                seqs.push(MemoryFastaSeq {
+                    name: std::mem::take(&mut name),
+                    seq: std::mem::take(&mut seq),
+                });
+            }
+            let first = header.split_whitespace().next().unwrap_or("").to_string();
+            name = first;
+        } else if !name.is_empty() {
+            seq.extend(
+                line.trim_end()
+                    .as_bytes()
+                    .iter()
+                    .filter(|b| b.is_ascii_alphabetic())
+                    .map(|b| b.to_ascii_uppercase()),
+            );
+        }
+    }
+
+    if !name.is_empty() {
+        seqs.push(MemoryFastaSeq { name, seq });
+    }
+
+    if seqs.is_empty() {
+        return Err(PipelineError::NoSequences(path.to_path_buf()));
+    }
+
+    Ok(seqs)
+}
+
+/// Extract intervals from an in-memory sequence without any disk reading.
+pub fn extract_intervals_in_memory(seq: &[u8], intervals: &[(u64, u64)]) -> Vec<Vec<u8>> {
+    let mut out = Vec::with_capacity(intervals.len());
+    for &(s, e) in intervals {
+        let start = (s as usize).min(seq.len());
+        let end = (e as usize).min(seq.len());
+        if start < end {
+            out.push(seq[start..end].to_vec());
+        } else {
+            out.push(Vec::new());
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -176,5 +244,20 @@ mod tests {
     fn test_split_rejects_empty_input() {
         let (input, dir) = scratch("split_empty", "\n\n");
         assert!(split_fasta(&input, &dir).is_err());
+    }
+
+    #[test]
+    fn test_read_fasta_in_memory() {
+        let (input, _) = scratch("mem_fasta", ">seq1 header info\nACGT\nACGT\n>seq2\nTTTT\n");
+        let seqs = read_fasta_in_memory(&input).unwrap();
+        assert_eq!(seqs.len(), 2);
+        assert_eq!(seqs[0].name, "seq1");
+        assert_eq!(seqs[0].seq, b"ACGTACGT");
+        assert_eq!(seqs[1].name, "seq2");
+        assert_eq!(seqs[1].seq, b"TTTT");
+
+        let intervals = extract_intervals_in_memory(&seqs[0].seq, &[(0, 3), (4, 8)]);
+        assert_eq!(intervals[0], b"ACG");
+        assert_eq!(intervals[1], b"ACGT");
     }
 }

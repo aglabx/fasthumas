@@ -6,7 +6,9 @@ use crate::error::PipelineError;
 #[derive(Debug, Clone)]
 pub struct Options {
     pub input: PathBuf,
-    pub hmm: PathBuf,
+    pub hmm: Option<PathBuf>,
+    pub hor: Option<PathBuf>,
+    pub sf: Option<PathBuf>,
     pub output: Option<PathBuf>,
     pub threads: usize,
     pub threads_per_job: usize,
@@ -15,11 +17,26 @@ pub struct Options {
     pub score_threshold: f64,
 }
 
+#[derive(Debug, Clone)]
+pub enum RunMode {
+    Single {
+        hmm: PathBuf,
+        output: PathBuf,
+    },
+    Combined {
+        hor: Option<PathBuf>,
+        sf: Option<PathBuf>,
+        prefix: PathBuf,
+    },
+}
+
 /// nhmmer's own `--block_length` default: the target is read in blocks of
 /// this many residues and one block goes to one worker thread.
+#[allow(dead_code)]
 const BLOCK_LENGTH: u64 = 1024 * 256;
 
 /// How many jobs run at once, and how many threads each sequence gets.
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Layout {
     pub jobs: usize,
@@ -27,17 +44,16 @@ pub struct Layout {
     pub threads: Vec<usize>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Config {
     /// The FASTA file to annotate. May hold any number of sequences.
     pub input: PathBuf,
-    /// The HMM profile to scan with — HOR or SF, one per run.
-    pub hmm: PathBuf,
-    /// The BED file to write.
-    pub output: PathBuf,
-    /// Total CPU budget across all concurrent nhmmer jobs.
+    /// Execution mode: single HMM or combined HOR+SF.
+    pub mode: RunMode,
+    /// Total CPU budget across all concurrent jobs.
     pub threads: usize,
-    /// Threads handed to a single nhmmer job.
+    /// Threads handed to a single job.
     pub threads_per_job: usize,
     /// Directory the private scratch directory is created in.
     pub temp_base: PathBuf,
@@ -50,29 +66,63 @@ impl Config {
         if !o.input.is_file() {
             return Err(PipelineError::InputNotFile(o.input));
         }
-        if !o.hmm.exists() {
-            return Err(PipelineError::HmmNotFound(o.hmm));
-        }
 
         let stem = o.input.file_stem().unwrap_or_default().to_os_string();
-        let output = match o.output {
-            // No -o: write `<input stem>.bed` into the current directory.
-            None => with_extension(&PathBuf::from(&stem)),
-            // -o names a directory: keep the input stem as the file name.
-            Some(p) if p.is_dir() || ends_with_separator(&p) => with_extension(&p.join(&stem)),
-            // -o is the path prefix itself.
-            Some(p) => with_extension(&p),
+
+        let mode = if o.hor.is_some() || o.sf.is_some() {
+            if let Some(ref h) = o.hor {
+                if !h.exists() {
+                    return Err(PipelineError::HmmNotFound(h.clone()));
+                }
+            }
+            if let Some(ref s) = o.sf {
+                if !s.exists() {
+                    return Err(PipelineError::HmmNotFound(s.clone()));
+                }
+            }
+            let prefix = match o.output {
+                None => PathBuf::from(&stem),
+                Some(p) if p.is_dir() || ends_with_separator(&p) => p.join(&stem),
+                Some(p) => {
+                    if p.extension().is_some_and(|ext| ext == "bed") {
+                        p.with_extension("")
+                    } else {
+                        p
+                    }
+                }
+            };
+            RunMode::Combined {
+                hor: o.hor,
+                sf: o.sf,
+                prefix,
+            }
+        } else if let Some(h) = o.hmm {
+            if !h.exists() {
+                return Err(PipelineError::HmmNotFound(h.clone()));
+            }
+            let output = match o.output {
+                None => with_extension(&PathBuf::from(&stem)),
+                Some(p) if p.is_dir() || ends_with_separator(&p) => with_extension(&p.join(&stem)),
+                Some(p) => with_extension(&p),
+            };
+            RunMode::Single { hmm: h, output }
+        } else {
+            return Err(PipelineError::NoHmmSpecified);
         };
 
-        let temp_base = o.temp_dir.unwrap_or_else(|| match output.parent() {
+        let temp_parent = match mode {
+            RunMode::Single { ref output, .. } => output.parent(),
+            RunMode::Combined { ref prefix, .. } => prefix.parent(),
+        };
+
+        let temp_base = o.temp_dir.unwrap_or_else(|| match temp_parent {
             Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
             _ => PathBuf::from("."),
         });
 
         Ok(Config {
             input: o.input,
-            hmm: o.hmm,
-            output,
+            mode,
             threads: o.threads.max(1),
             threads_per_job: o.threads_per_job.max(1),
             temp_base,
@@ -83,6 +133,7 @@ impl Config {
 
     /// A scratch directory this process owns outright, so that deleting it at
     /// the end cannot touch anything the user put there.
+    #[allow(dead_code)]
     pub fn temp_dir_path(&self) -> PathBuf {
         self.temp_base
             .join(format!("humas-hmmer-tmp-{}", std::process::id()))
@@ -100,6 +151,7 @@ impl Config {
     /// budget holds when it matters. And no sequence is given more threads than
     /// it has work for: nhmmer reads a target in blocks of `BLOCK_LENGTH` and
     /// hands one block to a worker, so threads past that have nothing to do.
+    #[allow(dead_code)]
     pub fn plan(&self, lengths: &[u64]) -> Layout {
         let n = lengths.len().max(1);
         let jobs = (self.threads / self.threads_per_job).clamp(1, n);
@@ -149,8 +201,10 @@ mod tests {
     fn config(threads: usize, per_job: usize) -> Config {
         Config {
             input: PathBuf::from("chm13.fa"),
-            hmm: PathBuf::from("hor.hmm"),
-            output: PathBuf::from("chm13.bed"),
+            mode: RunMode::Single {
+                hmm: PathBuf::from("hor.hmm"),
+                output: PathBuf::from("chm13.bed"),
+            },
             threads,
             threads_per_job: per_job,
             temp_base: PathBuf::from("."),

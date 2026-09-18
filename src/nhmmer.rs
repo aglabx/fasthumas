@@ -25,6 +25,7 @@ use crate::tblout::{hit_to_bed, parse_tblout_line};
 /// fail.
 ///
 /// Returns filtered, sorted BED records.
+#[allow(dead_code)]
 pub fn run_nhmmer(
     hmm_path: &Path,
     fasta_path: &Path,
@@ -117,6 +118,7 @@ pub fn run_nhmmer(
 
 /// The last thing nhmmer said before giving up, which is the part that explains
 /// why.
+#[allow(dead_code)]
 fn last_line(text: &str) -> Option<String> {
     text.lines()
         .map(str::trim)

@@ -1,17 +1,25 @@
 [package]
-name = "humas-hmmer"
-version = "0.1.0"
+name = "fasthumas"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.74"
-description = "Alpha-satellite HOR/SF annotation: a single-binary Rust port of the HumAS-HMMER bash pipeline"
+description = "FastHumAS: Ultra-fast in-memory centromeric alpha-satellite HOR/SF annotation engine in pure Rust"
 authors = ["Aleksey Komissarov <ad3002@gmail.com>"]
-repository = "https://github.com/aglabx/humas_hmmer"
-homepage = "https://github.com/aglabx/humas_hmmer"
+repository = "https://github.com/aglabx/fasthumas"
+homepage = "https://github.com/aglabx/fasthumas"
 license = "MIT"
 readme = "README.md"
 keywords = ["bioinformatics", "genomics", "alpha-satellite", "centromere", "hmmer"]
 categories = ["command-line-utilities", "science"]
 exclude = ["/.github", "/docs"]
+
+[[bin]]
+name = "fasthumas"
+path = "src/main.rs"
+
+[[bin]]
+name = "humas-hmmer"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

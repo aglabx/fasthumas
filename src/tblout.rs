@@ -16,6 +16,7 @@ pub struct HmmHit {
 
 /// Parse a single tblout line into an HmmHit.
 /// Returns None for comment lines or unparseable lines.
+#[allow(dead_code)]
 pub fn parse_tblout_line(line: &str) -> Option<HmmHit> {
     if line.starts_with('#') || line.trim().is_empty() {
         return None;
@@ -63,6 +64,7 @@ pub fn parse_tblout_line(line: &str) -> Option<HmmHit> {
 /// base to the right and makes it two bases too short, and the same wrong
 /// length then feeds the score/length threshold. This port does not reproduce
 /// that; minus-strand output therefore differs from the original pipeline.
+#[allow(dead_code)]
 pub fn hit_to_bed(hit: &HmmHit, threshold: f64) -> Option<BedRecord> {
     let (lo, hi) = if hit.ali_from <= hit.ali_to {
         (hit.ali_from, hit.ali_to)

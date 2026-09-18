@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum PipelineError {
     #[error("nhmmer failed for {path}: {message}")]
@@ -22,6 +23,9 @@ pub enum PipelineError {
 
     #[error("HMM profile not found: {0}")]
     HmmNotFound(PathBuf),
+
+    #[error("Neither --hmm nor --hor/--sf specified")]
+    NoHmmSpecified,
 
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),

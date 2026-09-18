@@ -1,8 +1,8 @@
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
-use std::process::Command;
 
 use crate::error::PipelineError;
+use crate::hmm::HmmCollection;
 
 /// Majority-rule consensus sequences for the models in a profile, as produced
 /// by `hmmemit -c`. One residue per match state, so a consensus is as long as
@@ -19,33 +19,20 @@ pub struct Consensus {
 }
 
 impl Consensus {
+    #[allow(dead_code)]
     pub fn from_profile(hmm: &Path) -> Result<Self, PipelineError> {
-        let output = Command::new("hmmemit")
-            .arg("-c")
-            .arg(hmm)
-            .output()
-            .map_err(|e| {
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    PipelineError::HmmemitNotFound
-                } else {
-                    PipelineError::HmmemitFailed {
-                        path: hmm.to_path_buf(),
-                        message: e.to_string(),
-                    }
-                }
-            })?;
+        let coll = HmmCollection::load_from_file(hmm)?;
+        Ok(Self::from_collection(&coll))
+    }
 
-        if !output.status.success() {
-            return Err(PipelineError::HmmemitFailed {
-                path: hmm.to_path_buf(),
-                message: String::from_utf8_lossy(&output.stderr).trim().to_string(),
-            });
+    pub fn from_collection(coll: &HmmCollection) -> Self {
+        Consensus {
+            models: coll.to_consensus_map(),
         }
-
-        Ok(Self::parse(&output.stdout))
     }
 
     /// Parse the FASTA `hmmemit -c` writes. Headers look like `>Ja-consensus`.
+    #[allow(dead_code)]
     pub(crate) fn parse(fasta: &[u8]) -> Self {
         let mut models: HashMap<String, Vec<Vec<u8>>> = HashMap::new();
         let mut name: Option<String> = None;
@@ -96,15 +83,20 @@ impl Consensus {
 
     /// Names that stand for models of more than one length, where the model's
     /// length cannot be recovered from a hit.
+    #[allow(dead_code)]
     pub fn length_ambiguous(&self) -> usize {
         self.models
             .values()
-            .filter(|v| v.iter().map(|c| c.len()).collect::<BTreeSet<_>>().len() > 1)
+            .filter(|variants| {
+                let lengths: BTreeSet<usize> = variants.iter().map(Vec::len).collect();
+                lengths.len() > 1
+            })
             .count()
     }
 }
 
 /// File a model under its name, keeping distinct consensuses apart.
+#[allow(dead_code)]
 fn add(models: &mut HashMap<String, Vec<Vec<u8>>>, name: String, seq: Vec<u8>) {
     let variants = models.entry(name).or_default();
     if !variants.contains(&seq) {
