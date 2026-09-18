@@ -72,8 +72,13 @@ fasthumas -i genome.fa --hmm AS-SFs-hmmer3.0.290621.hmm    -o results/genome_sf.
 | `-o`, `--output` | input file stem | Output path (single mode) or prefix (combined mode) |
 | `-t`, `--threads` | `48` | Total worker threads across all parallel jobs |
 | `--score-threshold` | `0.7` | Minimum score-to-length ratio for a hit to be kept |
+| `--fast` | *default* | Fast in-memory pure-Rust scanning engine (~30 min whole genome) |
+| `--legacy` | `false` | Run legacy `nhmmer` subprocess engine with coordinate fix & healing |
+| `--temp` | `/tmp` | Base directory for temporary sequence files (legacy mode) |
+| `--keep-temp` | `false` | Keep temporary files after legacy run completes |
 
 Set `RUST_LOG=debug` or `RUST_LOG=info` for per-sequence runtime details.
+
 
 ### What to feed it
 

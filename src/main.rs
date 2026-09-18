@@ -55,16 +55,24 @@ struct Cli {
     #[arg(long, default_value = "0.7")]
     score_threshold: f64,
 
-    /// Legacy option preserved for compatibility
-    #[arg(long, default_value = "4", value_name = "N", hide = true)]
+    /// Use legacy nhmmer backend (requires nhmmer on PATH) with corrected coordinates and junction healing
+    #[arg(long)]
+    legacy: bool,
+
+    /// Use fast pure-Rust in-memory scanning engine (default)
+    #[arg(long, default_value_t = true)]
+    fast: bool,
+
+    /// Threads per job for legacy nhmmer scheduling (default: 4)
+    #[arg(long, default_value = "4", value_name = "N")]
     threads_per_job: usize,
 
-    /// Legacy option preserved for compatibility
-    #[arg(long, value_name = "DIR", hide = true)]
+    /// Directory for scratch files (used in legacy mode)
+    #[arg(long, value_name = "DIR")]
     temp_dir: Option<PathBuf>,
 
-    /// Legacy option preserved for compatibility
-    #[arg(long, hide = true)]
+    /// Keep temporary files instead of deleting them (used in legacy mode)
+    #[arg(long)]
     keep_temp: bool,
 }
 
@@ -92,6 +100,7 @@ fn main() {
         temp_dir: cli.temp_dir,
         keep_temp: cli.keep_temp,
         score_threshold: cli.score_threshold,
+        legacy: cli.legacy,
     }) {
         Ok(c) => c,
         Err(e) => {

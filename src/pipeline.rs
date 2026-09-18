@@ -154,40 +154,209 @@ pub fn annotate_sequences(
     Ok((all_records, total_stats))
 }
 
+/// Run legacy nhmmer backend on the input FASTA.
+/// Splits FASTA per sequence into temp_dir, runs nhmmer concurrently with proportional threading,
+/// parses hits in memory, heals junctions, and returns final BedRecords.
+pub fn annotate_sequences_legacy(
+    config: &Config,
+    hmm_path: &Path,
+    temp_dir: &Path,
+) -> Result<(Vec<BedRecord>, GapStats), PipelineError> {
+    let start_legacy = std::time::Instant::now();
+    let split = crate::fasta::split_fasta(&config.input, temp_dir)?;
+    let n = split.seqs.len();
+    let dbsize_mb = (split.residues as f64 / 1.0e6).max(1.0e-6);
+    let lengths: Vec<u64> = split.seqs.iter().map(|s| s.len).collect();
+    let plan = config.plan(&lengths);
+
+    info!(
+        "{}: {} sequences, {:.1} Mb; {} concurrent legacy nhmmer jobs, {}-{} threads each",
+        config.input.display(),
+        n,
+        dbsize_mb,
+        plan.jobs,
+        plan.threads.iter().min().copied().unwrap_or(0),
+        plan.threads.iter().max().copied().unwrap_or(0),
+    );
+
+    let consensus = Consensus::from_profile(hmm_path)?;
+
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(plan.jobs)
+        .build()
+        .map_err(|e| PipelineError::Io(std::io::Error::other(e.to_string())))?;
+
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&i| std::cmp::Reverse(lengths[i]));
+
+    let outcomes: Vec<(usize, Result<Pending, String>)> = pool.install(|| {
+        order
+            .par_iter()
+            .map(|&i| {
+                let seq = &split.seqs[i];
+                let threads = plan.threads[i];
+                let records = match crate::nhmmer::run_nhmmer(
+                    hmm_path,
+                    &seq.path,
+                    threads,
+                    dbsize_mb,
+                    config.score_threshold,
+                ) {
+                    Ok(r) => r,
+                    Err(e) => return (i, Err(format!("{}: {}", seq.name, e))),
+                };
+
+                let (candidates, stats) = junction::candidates(&records, &consensus, &POLICY);
+                let mut sides = Vec::new();
+                if !candidates.is_empty() {
+                    let intervals: Vec<(u64, u64)> =
+                        candidates.iter().map(|c| (c.start, c.end)).collect();
+                    let bases = match crate::fasta::read_intervals(&seq.path, &intervals) {
+                        Ok(b) => b,
+                        Err(e) => return (i, Err(format!("{}: {}", seq.name, e))),
+                    };
+                    sides = junction::sides(&records, &candidates, &bases, &consensus);
+                }
+
+                if !config.keep_temp {
+                    let _ = fs::remove_file(&seq.path);
+                }
+
+                (i, Ok(Pending { records, sides, stats }))
+            })
+            .collect()
+    });
+
+    let mut pendings: Vec<Pending> = Vec::with_capacity(n);
+    let mut slots: Vec<Option<Pending>> = (0..n).map(|_| None).collect();
+    let mut failures: Vec<String> = Vec::new();
+
+    for (i, outcome) in outcomes {
+        match outcome {
+            Ok(pending) => slots[i] = Some(pending),
+            Err(msg) => failures.push(msg),
+        }
+    }
+
+    if !failures.is_empty() {
+        return Err(PipelineError::NhmmerFailed {
+            path: config.input.clone(),
+            message: format!("{} sequence(s) failed in nhmmer:\n{}", failures.len(), failures.join("\n")),
+        });
+    }
+
+    for slot in slots {
+        if let Some(p) = slot {
+            pendings.push(p);
+        }
+    }
+
+    let mut tally = Tally::default();
+    for pending in &pendings {
+        for side in &pending.sides {
+            tally.add(side);
+        }
+    }
+
+    let mut total_stats = GapStats::default();
+    let mut all_records = Vec::new();
+
+    for pending in &pendings {
+        total_stats.merge(&pending.stats);
+        let mut edits = Edits::new();
+
+        for side in &pending.sides {
+            let verdict = tally.verdict(side, &POLICY);
+            total_stats.sides += 1;
+            match verdict {
+                Verdict::Consensus => total_stats.by_consensus += 1,
+                Verdict::Recurrent { .. } => total_stats.by_recurrence += 1,
+                Verdict::Rejected => total_stats.rejected += 1,
+            }
+            if verdict.accepted() {
+                total_stats.bases += side.bases;
+                let slot = edits.entry(side.record).or_insert((0, 0));
+                if side.extend_right {
+                    slot.1 += side.bases;
+                } else {
+                    slot.0 += side.bases;
+                }
+            }
+        }
+
+        for (rec_idx, rec) in pending.records.iter().enumerate() {
+            let mut modified = rec.clone();
+            if let Some(&(left, right)) = edits.get(&rec_idx) {
+                modified.start = modified.start.saturating_sub(left);
+                modified.end += right;
+                modified.thick_start = modified.start;
+                modified.thick_end = modified.end;
+            }
+            all_records.push(modified);
+        }
+    }
+
+    info!(
+        "{}: legacy nhmmer run finished: {} records in {:.2}s",
+        hmm_path.display(),
+        all_records.len(),
+        start_legacy.elapsed().as_secs_f64()
+    );
+
+    Ok((all_records, total_stats))
+}
+
 /// FastHumAS execution entry point.
 ///
-/// Runs single-HMM or combined HOR+SF in-memory annotation:
-/// - Single mode: writes one output BED9 file.
-/// - Combined mode: writes standard tracks (.AS-HOR+SF.bed, .AS-HOR.bed, .AS-SF.bed, .AS-strand.bed).
+/// Supports two backends:
+/// - Fast in-memory pure-Rust scanner (default)
+/// - Legacy nhmmer backend via `--legacy`
 pub fn run(config: &Config) -> Result<(), PipelineError> {
     let start_total = std::time::Instant::now();
 
-    // 1. Read input FASTA once into RAM
-    let start_io = std::time::Instant::now();
-    let seqs = read_fasta_in_memory(&config.input)?;
-    let total_residues: usize = seqs.iter().map(|s| s.seq.len()).sum();
-    info!(
-        "{}: loaded {} sequences, {:.2} Mb in {:.2}s",
-        config.input.display(),
-        seqs.len(),
-        total_residues as f64 / 1.0e6,
-        start_io.elapsed().as_secs_f64()
-    );
+    let (seqs, temp_dir) = if config.legacy {
+        fs::create_dir_all(&config.temp_base)?;
+        let temp_dir = config.temp_dir_path();
+        fs::create_dir_all(&temp_dir)?;
+        info!("Running in --legacy mode with nhmmer backend (temp dir: {})", temp_dir.display());
+        (None, Some(temp_dir))
+    } else {
+        let start_io = std::time::Instant::now();
+        let s = read_fasta_in_memory(&config.input)?;
+        let total_residues: usize = s.iter().map(|item| item.seq.len()).sum();
+        info!(
+            "{}: loaded {} sequences, {:.2} Mb in {:.2}s",
+            config.input.display(),
+            s.len(),
+            total_residues as f64 / 1.0e6,
+            start_io.elapsed().as_secs_f64()
+        );
+        (Some(s), None)
+    };
 
-    match config.mode {
+    let annotate = |hmm: &Path| -> Result<(Vec<BedRecord>, GapStats), PipelineError> {
+        if config.legacy {
+            annotate_sequences_legacy(config, hmm, temp_dir.as_ref().unwrap())
+        } else {
+            annotate_sequences(seqs.as_ref().unwrap(), hmm, config.score_threshold)
+        }
+    };
+
+    let res = match config.mode {
         RunMode::Single { ref hmm, ref output } => {
-            let (records, _) = annotate_sequences(&seqs, hmm, config.score_threshold)?;
+            let (records, _) = annotate(hmm)?;
             write_bed_file(output, &records)?;
             info!(
-                "{} records -> {} (total pipeline time: {:.2}s)",
+                "{} records -> {} (total time: {:.2}s)",
                 records.len(),
                 output.display(),
                 start_total.elapsed().as_secs_f64()
             );
+            Ok(())
         }
         RunMode::Combined { ref hor, ref sf, ref prefix } => {
             if let Some(ref hor_path) = hor {
-                let (hor_records, _) = annotate_sequences(&seqs, hor_path, config.score_threshold)?;
+                let (hor_records, _) = annotate(hor_path)?;
 
                 let hor_sf_path = track_path(prefix, "AS-HOR+SF");
                 write_bed_file(&hor_sf_path, &hor_records)?;
@@ -203,7 +372,7 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
             }
 
             if let Some(ref sf_path) = sf {
-                let (sf_records, _) = annotate_sequences(&seqs, sf_path, config.score_threshold)?;
+                let (sf_records, _) = annotate(sf_path)?;
 
                 let sf_path_out = track_path(prefix, "AS-SF");
                 write_bed_file(&sf_path_out, &sf_records)?;
@@ -229,8 +398,17 @@ pub fn run(config: &Config) -> Result<(), PipelineError> {
                 "Combined HOR+SF pipeline completed in {:.2}s",
                 start_total.elapsed().as_secs_f64()
             );
+            Ok(())
+        }
+    };
+
+    if let Some(ref td) = temp_dir {
+        if !config.keep_temp {
+            let _ = fs::remove_dir_all(td);
+        } else {
+            info!("Temporary files preserved in: {}", td.display());
         }
     }
 
-    Ok(())
+    res
 }

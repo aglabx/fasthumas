@@ -15,6 +15,7 @@ pub struct Options {
     pub temp_dir: Option<PathBuf>,
     pub keep_temp: bool,
     pub score_threshold: f64,
+    pub legacy: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +60,7 @@ pub struct Config {
     pub temp_base: PathBuf,
     pub keep_temp: bool,
     pub score_threshold: f64,
+    pub legacy: bool,
 }
 
 impl Config {
@@ -128,6 +130,7 @@ impl Config {
             temp_base,
             keep_temp: o.keep_temp,
             score_threshold: o.score_threshold,
+            legacy: o.legacy,
         })
     }
 
@@ -210,6 +213,7 @@ mod tests {
             temp_base: PathBuf::from("."),
             keep_temp: false,
             score_threshold: 0.7,
+            legacy: false,
         }
     }
 

@@ -17,9 +17,6 @@ exclude = ["/.github", "/docs"]
 name = "fasthumas"
 path = "src/main.rs"
 
-[[bin]]
-name = "humas-hmmer"
-path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
