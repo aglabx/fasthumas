@@ -1,0 +1,6 @@
+=== FastHumAS CHM13 DP Recurrence Fix Validation ===
+New Run (Fixed Gotoh DP): 488754 records
+Old Run (Pre-fix DP):     488786 records
+Exact bit-for-bit identical (chrom, start, end, name, strand): 488636 (99.976%)
+Only in new (fixed): 118
+Only in old (buggy): 150
