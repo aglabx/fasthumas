@@ -1,14 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_DIR="/mnt/data/claude/benchmark_fasthumas"
+BASE_DIR="${BENCHMARK_BASE_DIR:-/mnt/data/claude/benchmark_fasthumas}"
 RESULTS_DIR="${BASE_DIR}/results/fasthumas"
 LOGS_DIR="${BASE_DIR}/logs"
-BIN="/mnt/data/claude/2026-09-18_humas_hmmer/target/release/fasthumas"
-HOR_HMM="/mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm"
-SF_HMM="/mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm"
+BIN="${FASTHUMAS_BIN:-/mnt/data/claude/2026-09-18_humas_hmmer/target/release/fasthumas}"
+HOR_HMM="${HOR_HMM:-/mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm}"
+SF_HMM="${SF_HMM:-/mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm}"
 SUMMARY_FILE="${BASE_DIR}/fasthumas_summary.tsv"
-THREADS=96
+THREADS="${THREADS:-96}"
 
 mkdir -p "${RESULTS_DIR}" "${LOGS_DIR}"
 
