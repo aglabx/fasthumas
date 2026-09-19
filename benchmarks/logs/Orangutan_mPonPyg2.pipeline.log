@@ -1,0 +1,12 @@
+[2026-09-18T21:17:53Z INFO  fasthumas::pipeline] /mnt/data/t2t/primates_t2t/bornean_orangutan/mPonPyg2.hap1.cur.20231122.fasta: loaded 24 sequences, 3171.52 Mb in 42.59s
+[2026-09-18T21:17:53Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: loaded 1963 models (1278 unique names) in 0.69s
+[2026-09-18T22:19:31Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: in-memory scan completed in 3698.09s
+[2026-09-18T22:19:32Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: junctions: 97840 gaps <= 3 bp, 90991 accounted for by trimming, 0 unresolved; sides: 799 by consensus, 54213 by recurring variant, 35979 left alone; 62830 bases returned
+[2026-09-18T22:19:32Z INFO  fasthumas::pipeline] 772095 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Orangutan_mPonPyg2.AS-HOR+SF.bed
+[2026-09-18T22:19:33Z INFO  fasthumas::pipeline] 345873 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Orangutan_mPonPyg2.AS-HOR.bed
+[2026-09-18T22:19:33Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: loaded 39 models (39 unique names) in 0.06s
+[2026-09-18T22:22:00Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: in-memory scan completed in 147.38s
+[2026-09-18T22:22:01Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: junctions: 98451 gaps <= 3 bp, 92148 accounted for by trimming, 0 unresolved; sides: 528 by consensus, 51479 by recurring variant, 40141 left alone; 62667 bases returned
+[2026-09-18T22:22:01Z INFO  fasthumas::pipeline] 772161 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Orangutan_mPonPyg2.AS-SF.bed
+[2026-09-18T22:22:02Z INFO  fasthumas::pipeline] 772161 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Orangutan_mPonPyg2.AS-strand.bed
+[2026-09-18T22:22:02Z INFO  fasthumas::pipeline] Combined HOR+SF pipeline completed in 3892.12s

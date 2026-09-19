@@ -1,2 +1,8 @@
 genome	species	assembly_path	wall_time	user_sec	sys_sec	max_rss_kb	hor_sf_records	hor_records	sf_records
 T2T-CHM13_v2.0	Homo sapiens	/mnt/data/t2t/CHM13/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna	38:54.85	218857.06	122.99	31049924	488754	429212	488695
+T2T-HG002_mat	Homo sapiens	/mnt/data/t2t/HG002/hg002v1.1.mat.fasta	40:43.72	231055.79	113.09	30440300	483707	422796	483694
+T2T-RPE1_hap1	Homo sapiens	/mnt/data/t2t/RPE1/RPE1v1.1.hap1.fasta	47:20.92	267520.19	108.98	30554732	467998	409679	468063
+Chimpanzee_mPanTro3	Pan troglodytes	/mnt/data/t2t/primates_t2t/chimpanzee/mPanTro3.cur.20231122.fasta	39:50.84	224262.25	119.50	30230940	403303	313725	403321
+Bonobo_mPanPan1	Pan paniscus	/mnt/data/t2t/primates_t2t/bonobo/mPanPan1.mat.cur.20231122.fasta	38:55.87	215891.99	124.20	30737132	357593	265519	357671
+Gorilla_mGorGor1	Gorilla gorilla	/mnt/data/t2t/primates_t2t/gorilla/mGorGor1.mat.cur.20231122.fasta	1:05:14	369652.03	159.72	35281076	660556	600595	660565
+Orangutan_mPonPyg2	Pongo pygmaeus	/mnt/data/t2t/primates_t2t/bornean_orangutan/mPonPyg2.hap1.cur.20231122.fasta	1:04:52	366235.95	123.82	31764448	772095	345873	772161

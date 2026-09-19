@@ -1,8 +1,8 @@
 # FastHumAS Benchmark Reference Assemblies Manifest
-# Machine: aglab0 (Dual AMD EPYC 9654, 192 vCPUs, 2.9 TB RAM)
+# Machine: aglab0 (Dual-socket AMD EPYC 9654, 192 physical cores / 384 threads total, 2.9 TB DDR5 RAM, 96 threads allocated)
 # HMM Profiles:
-#   AS-HORs-hmmer3.3.2-120124.hmm (1,963 models, MD5: 4c642b44df914a47bed2cd3d0998f8e6)
-#   AS-SFs-hmmer3.0.290621.hmm    (39 models,    MD5: b7c211e2e72edfbe9f9068a5432f4025)
+#   AS-HORs-hmmer3.3.2-120124.hmm (1,963 monomer-level HOR models, lengths 88–176 bp, MD5: 4c642b44df914a47bed2cd3d0998f8e6)
+#   AS-SFs-hmmer3.0.290621.hmm    (39 SF profile models representing SF1–SF5 classes, lengths 167–174 bp, mean 170.8 bp, MD5: b7c211e2e72edfbe9f9068a5432f4025)
 assembly_id	species	source_accession_path	num_seqs	total_bp	total_mb	fasta_md5
 T2T-CHM13_v2.0	Homo sapiens	GCF_009914755.1_T2T-CHM13v2.0_genomic.fna	24	3117275501	3117.28	9621f8e9e8cbf0d2c020677714195ac3
 T2T-HG002_mat	Homo sapiens	hg002v1.1.mat.fasta	23	3051512984	3051.51	775f6a83cc50f5689d1eee13d174c287

@@ -42,26 +42,45 @@ for NAME in "${ORDER[@]}"; do
     echo "FASTA: ${FASTA}"
     echo "=========================================================="
 
-    PREFIX="${RESULTS_DIR}/${NAME}"
+    GENOME_DIR="${RESULTS_DIR}/${NAME}"
+    rm -rf "${GENOME_DIR}"
+    mkdir -p "${GENOME_DIR}"
+
+    PREFIX="${GENOME_DIR}/${NAME}"
     TIMELOG="${LOGS_DIR}/${NAME}.time.log"
     PIPELOG="${LOGS_DIR}/${NAME}.pipeline.log"
 
+    set +e
     /usr/bin/time -v -o "${TIMELOG}" "${BIN}" \
         -i "${FASTA}" \
         -t "${THREADS}" \
         --hor "${HOR_HMM}" \
         --sf "${SF_HMM}" \
         -o "${PREFIX}" \
-        > "${PIPELOG}" 2>&1 || true
+        > "${PIPELOG}" 2>&1
+    EXIT_CODE=$?
+    set -e
+
+    if [ ${EXIT_CODE} -ne 0 ]; then
+        echo "[ERROR] Benchmark for ${NAME} failed with exit code ${EXIT_CODE}! Check ${PIPELOG}" >&2
+        exit ${EXIT_CODE}
+    fi
+
+    # Verify exit status recorded by GNU time
+    TIME_STATUS=$(grep "Exit status:" "${TIMELOG}" | awk -F': ' '{print $2}' || echo "0")
+    if [ "${TIME_STATUS}" != "0" ]; then
+        echo "[ERROR] GNU time recorded non-zero exit status (${TIME_STATUS}) for ${NAME}!" >&2
+        exit 1
+    fi
 
     WALL_TIME=$(grep "Elapsed (wall clock) time" "${TIMELOG}" | awk -F': ' '{print $2}' || echo "N/A")
     USER_TIME=$(grep "User time (seconds)" "${TIMELOG}" | awk -F': ' '{print $2}' || echo "0")
     SYS_TIME=$(grep "System time (seconds)" "${TIMELOG}" | awk -F': ' '{print $2}' || echo "0")
     MAX_RSS=$(grep "Maximum resident set size" "${TIMELOG}" | awk -F': ' '{print $2}' || echo "0")
 
-    HOR_SF_COUNT=$(wc -l < "${PREFIX}.AS-HOR+SF.bed" 2>/dev/null || echo "0")
-    HOR_COUNT=$(wc -l < "${PREFIX}.AS-HOR.bed" 2>/dev/null || echo "0")
-    SF_COUNT=$(wc -l < "${PREFIX}.AS-SF.bed" 2>/dev/null || echo "0")
+    HOR_SF_COUNT=$(wc -l < "${PREFIX}.AS-HOR+SF.bed")
+    HOR_COUNT=$(wc -l < "${PREFIX}.AS-HOR.bed")
+    SF_COUNT=$(wc -l < "${PREFIX}.AS-SF.bed")
 
     echo -e "${NAME}\t${SPECIES}\t${FASTA}\t${WALL_TIME}\t${USER_TIME}\t${SYS_TIME}\t${MAX_RSS}\t${HOR_SF_COUNT}\t${HOR_COUNT}\t${SF_COUNT}" >> "${SUMMARY_FILE}"
 

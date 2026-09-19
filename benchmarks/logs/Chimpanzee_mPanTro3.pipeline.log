@@ -1,0 +1,12 @@
+[2026-09-18T18:53:31Z INFO  fasthumas::pipeline] /mnt/data/t2t/primates_t2t/chimpanzee/mPanTro3.cur.20231122.fasta: loaded 24 sequences, 3034.92 Mb in 22.68s
+[2026-09-18T18:53:31Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: loaded 1963 models (1278 unique names) in 0.53s
+[2026-09-18T19:30:45Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: in-memory scan completed in 2233.78s
+[2026-09-18T19:30:45Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: junctions: 101837 gaps <= 3 bp, 85139 accounted for by trimming, 0 unresolved; sides: 46378 by consensus, 18504 by recurring variant, 20257 left alone; 128121 bases returned
+[2026-09-18T19:30:46Z INFO  fasthumas::pipeline] 403303 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Chimpanzee_mPanTro3.AS-HOR+SF.bed
+[2026-09-18T19:30:46Z INFO  fasthumas::pipeline] 313725 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Chimpanzee_mPanTro3.AS-HOR.bed
+[2026-09-18T19:30:46Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: loaded 39 models (39 unique names) in 0.07s
+[2026-09-18T19:32:58Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: in-memory scan completed in 131.71s
+[2026-09-18T19:32:58Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: junctions: 84227 gaps <= 3 bp, 73172 accounted for by trimming, 0 unresolved; sides: 36953 by consensus, 16241 by recurring variant, 19978 left alone; 100917 bases returned
+[2026-09-18T19:32:58Z INFO  fasthumas::pipeline] 403321 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Chimpanzee_mPanTro3.AS-SF.bed
+[2026-09-18T19:32:58Z INFO  fasthumas::pipeline] 403321 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Chimpanzee_mPanTro3.AS-strand.bed
+[2026-09-18T19:32:58Z INFO  fasthumas::pipeline] Combined HOR+SF pipeline completed in 2390.48s

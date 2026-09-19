@@ -1,0 +1,32 @@
+================================================================================
+FastHumAS vs Legacy HumAS-HMMER (nhmmer) Whole-Chromosome Concordance
+Assembly: T2T-CHM13 v2.0 (9 Finished Nuclear Chromosomes: chr1, chr3, chr8, chr10, chr11, chr12, chr14, chr22, chrY)
+Profiles: AS-HORs-hmmer3.3.2-120124.hmm (1,963 models) & AS-SFs-hmmer3.0.290621.hmm (39 models)
+================================================================================
+Chrom          | FastHumAS  | Legacy   | Overlap  | Sens %  | Prec %  | <=3bp Bdry        | Label Agr  | Strand Agr
+----------------------------------------------------------------------------------------------------------------
+NC_060925.1    | 30514      | 30571    | 30517    |  99.82% | 100.01% |  98.94% (30193)   |  99.77%    |  99.99%
+NC_060927.1    | 15491      | 15589    | 15491    |  99.37% | 100.00% |  98.24% (15219)   |  98.83%    | 100.00%
+NC_060932.1    | 15710      | 15804    | 15673    |  99.17% |  99.76% |  97.26% (15244)   |  99.55%    | 100.00%
+NC_060934.1    | 16835      | 16915    | 16822    |  99.45% |  99.92% |  98.08% (16499)   |  99.53%    |  99.99%
+NC_060935.1    | 26172      | 26385    | 26165    |  99.17% |  99.97% |  96.85% (25342)   |  99.14%    | 100.00%
+NC_060936.1    | 19947      | 20107    | 19941    |  99.17% |  99.97% |  97.28% (19398)   |  99.20%    | 100.00%
+NC_060938.1    | 22253      | 22434    | 22249    |  99.18% |  99.98% |  94.95% (21125)   |  98.89%    | 100.00%
+NC_060946.1    | 24425      | 24531    | 24422    |  99.56% |  99.99% |  97.10% (23714)   |  99.14%    | 100.00%
+NC_060948.1    | 2552       | 2589     | 2547     |  98.38% |  99.80% |  96.58% (2460)    |  99.65%    | 100.00%
+================================================================================================================
+TOTAL / OVERALL| 173899     | 174925   | 173827   |  99.37% |  99.96% |  97.33% (169194)  |  99.28%    | 100.00%
+
+Summary Metrics:
+- Discovered loci evaluated: 174,925 legacy nhmmer loci across 9 chromosomes
+- Sensitivity (Recall) of FastHumAS: 99.37% (173,827 / 174,925)
+- Precision (Positive Predictive Value): 99.96% (173,827 / 173,899)
+- Strand Orientation Concordance: 100.00%
+- Subfamily / HOR Profile Label Concordance: 99.28%
+- Boundary Concordance:
+  * Exact (=0 bp): 58,183 (33.47%)
+  * Within <= 3 bp: 169,194 (97.33%) [remainder reflects heuristic junction healing extending truncated edges]
+  * Within <= 10 bp: 173,339 (99.72%)
+- Method-Unique Loci:
+  * FastHumAS unique (not in legacy): 78 (0.04%)
+  * Legacy unique (not in FastHumAS): 1,098 (0.63%, marginal hits near threshold)

@@ -1,0 +1,36 @@
+==========================================================
+[2026-09-18 16:46:08] Starting FastHumAS benchmark for T2T-CHM13_v2.0 (Homo sapiens)
+FASTA: /mnt/data/t2t/CHM13/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna
+==========================================================
+[2026-09-18 17:25:03] Finished T2T-CHM13_v2.0: Wall=38:54.85, Peak RSS=31049924 KB, Records: HOR+SF=488754, HOR=429212, SF=488695
+==========================================================
+[2026-09-18 17:25:03] Starting FastHumAS benchmark for T2T-HG002_mat (Homo sapiens)
+FASTA: /mnt/data/t2t/HG002/hg002v1.1.mat.fasta
+==========================================================
+[2026-09-18 18:05:47] Finished T2T-HG002_mat: Wall=40:43.72, Peak RSS=30440300 KB, Records: HOR+SF=483707, HOR=422796, SF=483694
+==========================================================
+[2026-09-18 18:05:47] Starting FastHumAS benchmark for T2T-RPE1_hap1 (Homo sapiens)
+FASTA: /mnt/data/t2t/RPE1/RPE1v1.1.hap1.fasta
+==========================================================
+[2026-09-18 18:53:08] Finished T2T-RPE1_hap1: Wall=47:20.92, Peak RSS=30554732 KB, Records: HOR+SF=467998, HOR=409679, SF=468063
+==========================================================
+[2026-09-18 18:53:08] Starting FastHumAS benchmark for Chimpanzee_mPanTro3 (Pan troglodytes)
+FASTA: /mnt/data/t2t/primates_t2t/chimpanzee/mPanTro3.cur.20231122.fasta
+==========================================================
+[2026-09-18 19:32:59] Finished Chimpanzee_mPanTro3: Wall=39:50.84, Peak RSS=30230940 KB, Records: HOR+SF=403303, HOR=313725, SF=403321
+==========================================================
+[2026-09-18 19:32:59] Starting FastHumAS benchmark for Bonobo_mPanPan1 (Pan paniscus)
+FASTA: /mnt/data/t2t/primates_t2t/bonobo/mPanPan1.mat.cur.20231122.fasta
+==========================================================
+[2026-09-18 20:11:55] Finished Bonobo_mPanPan1: Wall=38:55.87, Peak RSS=30737132 KB, Records: HOR+SF=357593, HOR=265519, SF=357671
+==========================================================
+[2026-09-18 20:11:55] Starting FastHumAS benchmark for Gorilla_mGorGor1 (Gorilla gorilla)
+FASTA: /mnt/data/t2t/primates_t2t/gorilla/mGorGor1.mat.cur.20231122.fasta
+==========================================================
+[2026-09-18 21:17:10] Finished Gorilla_mGorGor1: Wall=1:05:14, Peak RSS=35281076 KB, Records: HOR+SF=660556, HOR=600595, SF=660565
+==========================================================
+[2026-09-18 21:17:10] Starting FastHumAS benchmark for Orangutan_mPonPyg2 (Pongo pygmaeus)
+FASTA: /mnt/data/t2t/primates_t2t/bornean_orangutan/mPonPyg2.hap1.cur.20231122.fasta
+==========================================================
+[2026-09-18 22:22:03] Finished Orangutan_mPonPyg2: Wall=1:04:52, Peak RSS=31764448 KB, Records: HOR+SF=772095, HOR=345873, SF=772161
+FastHumAS benchmark suite completed!

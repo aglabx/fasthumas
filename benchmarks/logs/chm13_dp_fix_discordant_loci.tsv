@@ -1,0 +1,244 @@
+chrom	new_start	new_end	new_len	new_name	new_strand	new_score	old_start	old_end	old_len	old_name	old_strand	old_score	category	description
+NC_060926.1	95002618	95002776	158	S2CMH4d.1	+	117.6	95002618	95002762	144	S2CMH4d.1	+	119.2	insertion_extension	Length expanded from 144 bp to 158 bp across insertion
+NC_060927.1	81014550	81014717	167	Aa	-	122.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060927.1	90367670	90367842	172	Ha	-	164.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060927.1	90398003	90398175	172	Ga	-	125.5	90398026	90398175	149	Ga	-	124.9	insertion_extension	Length expanded from 149 bp to 172 bp across insertion
+NC_060927.1	90468150	90468320	170	Ga	-	160.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060928.1	12265471	12265649	178	Aa	-	119.8	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060929.1	46576130	46576303	173	Ga	-	150.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060929.1	46790518	46790681	163	Ga	+	126.1	46790518	46790679	161	Ga	+	126.0	insertion_extension	Length expanded from 161 bp to 163 bp across insertion
+NC_060929.1	50039920	50040090	170	Ga	-	143.0	50039932	50040090	158	Ga	-	140.2	insertion_extension	Length expanded from 158 bp to 170 bp across insertion
+NC_060929.1	50052269	50052438	169	Ga	-	158.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060929.1	50118980	50119158	178	Ka	-	138.9	50118982	50119158	176	Ka	-	138.7	insertion_extension	Length expanded from 176 bp to 178 bp across insertion
+NC_060930.1	62580217	62580388	171	R2	+	157.8	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060931.1	59603094	59603265	171	Ga	-	171.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060931.1	60065231	60065402	171	Ga	+	171.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060931.1	60411998	60412175	177	S1CMH3d.1	+	147.7	60411998	60412165	167	S1CMH3d.1	+	147.7	insertion_extension	Length expanded from 167 bp to 177 bp across insertion
+NC_060931.1	63761509	63761678	169	Ga	-	155.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060931.1	63791369	63791457	88	S4C15H3-A.2	-	57.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060932.1	43904731	43904907	176	Ca	+	129.0	43904731	43904893	162	Ca	+	128.3	insertion_extension	Length expanded from 162 bp to 176 bp across insertion
+NC_060933.1	42457173	42457343	170	Ga	-	161.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060933.1	77334360	77334530	170	Ga	-	161.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060934.1	39174998	39175168	170	Ca	+	120.3	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060934.1	39232717	39232887	170	Oa	+	159.6	39232717	39232889	172	Oa	+	159.6	boundary_refinement	Boundary refined from 172 bp to 170 bp
+NC_060934.1	39365385	39365565	180	Ka	-	121.2	39365408	39365565	157	Ka	-	118.6	insertion_extension	Length expanded from 157 bp to 180 bp across insertion
+NC_060934.1	39501243	39501414	171	Ga	-	171.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060934.1	39514356	39514525	169	Ga	-	155.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060934.1	39526103	39526274	171	Ga	-	169.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060934.1	42027434	42027619	185	Ha	-	155.0	42027450	42027619	169	Ha	-	152.3	insertion_extension	Length expanded from 169 bp to 185 bp across insertion
+NC_060934.1	42040189	42040323	134	Ha	-	103.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060935.1	48835794	48835972	178	Ka	+	135.1	48835795	48835970	175	Na	+	138.3	insertion_extension	Length expanded from 175 bp to 178 bp across insertion
+NC_060935.1	48964241	48964412	171	Ga	-	173.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060935.1	49011527	49011704	177	R2	+	145.6	49011527	49011692	165	R2	+	143.5	insertion_extension	Length expanded from 165 bp to 177 bp across insertion
+NC_060935.1	50784809	50784980	171	Ka	+	114.7	50784809	50784976	167	Ka	+	112.4	insertion_extension	Length expanded from 167 bp to 171 bp across insertion
+NC_060935.1	50970036	50970207	171	Ga	-	162.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060935.1	50970291	50970464	173	Ga	-	149.2	50970306	50970464	158	Ga	-	148.3	insertion_extension	Length expanded from 158 bp to 173 bp across insertion
+NC_060935.1	54773759	54773910	151	Oa	+	101.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060935.1	54953385	54953555	170	Oa	+	122.7	54953385	54953544	159	Oa	+	121.7	insertion_extension	Length expanded from 159 bp to 170 bp across insertion
+NC_060936.1	37650652	37650823	171	Ga	+	171.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11201232	11201401	169	Ga	-	164.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11266260	11266430	170	Ga	+	156.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11386788	11386957	169	Ga	+	162.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11434142	11434311	169	Ga	+	167.3	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11475146	11475316	170	Ga	+	168.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11772443	11772613	170	Ga	-	166.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	11805224	11805308	84	S4C15H3-A.2	-	58.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	12981916	12982087	171	Ga	-	165.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060937.1	12982600	12982770	170	Ga	-	162.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	6119377	6119460	83	S4C15H3-A.2	+	72.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	7530779	7530863	84	S4C15H3-A.2	+	58.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	7876455	7876625	170	Ga	-	166.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	7917459	7917628	169	Ga	-	165.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	7964121	7964290	169	Ga	-	164.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	8136985	8137154	169	Ga	+	164.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	8964188	8964355	167	Ga	+	160.5	8964188	8964357	169	Ga	+	160.5	boundary_refinement	Boundary refined from 169 bp to 167 bp
+NC_060938.1	8978687	8978858	171	S4C15H3-B.17	+	167.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	8982604	8982773	169	Ga	+	162.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	9219786	9219943	157	Ga	+	138.5	9219786	9219955	169	Ga	+	139.9	boundary_refinement	Boundary refined from 169 bp to 157 bp
+NC_060938.1	9252614	9252778	164	Ga	-	137.8	9252605	9252778	173	Ga	-	138.6	boundary_refinement	Boundary refined from 173 bp to 164 bp
+NC_060938.1	9399419	9399590	171	Ga	+	165.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060938.1	12753490	12753660	170	Ga	-	159.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	13989835	13990004	169	Ga	-	166.3	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	14022101	14022272	171	Ga	-	151.3	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	14061670	14061839	169	Ga	+	161.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	14365477	14365646	169	Ga	+	162.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	14421365	14421538	173	Ga	+	163.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	14750344	14750521	177	Ga	-	145.9	14750358	14750521	163	Ga	-	145.6	insertion_extension	Length expanded from 163 bp to 177 bp across insertion
+NC_060939.1	14979374	14979544	170	Ga	-	146.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	15796644	15796813	169	Ga	-	155.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	15815891	15816062	171	Ga	-	165.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	15817676	15817846	170	Ga	-	166.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060939.1	15921192	15921363	171	Ga	-	167.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060940.1	35802280	35802452	172	S02CMH2d.6	+	139.9	35802280	35802445	165	S02CMH2d.6	+	138.8	insertion_extension	Length expanded from 165 bp to 172 bp across insertion
+NC_060940.1	38080335	38080506	171	Ga	-	159.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060940.1	38088099	38088270	171	S4C22H3.5	-	163.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060940.1	38091534	38091620	86	S4C15H3-A.2	-	72.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060940.1	38094692	38094863	171	S4C22H3.5	-	166.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060940.1	38125735	38125906	171	R2	-	174.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060940.1	38128466	38128637	171	Ga	-	158.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060941.1	22907197	22907380	183	Ja	-	127.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060941.1	23374721	23374881	160	Ja	-	117.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060941.1	27655205	27655376	171	Ga	+	173.8	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060942.1	15600288	15600458	170	Ga	+	156.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060943.1	24482684	24482862	178	Ka	+	138.5	24482684	24482860	176	Ka	+	138.3	insertion_extension	Length expanded from 176 bp to 178 bp across insertion
+NC_060943.1	24550226	24550395	169	Ga	+	155.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060943.1	24550567	24550736	169	Ga	+	163.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060943.1	28417640	28417816	176	S1C1/5/19H1L.5	+	181.9	28417640	28417807	167	S1C1/5/19H1L.5	+	181.9	insertion_extension	Length expanded from 167 bp to 176 bp across insertion
+NC_060943.1	29835299	29835469	170	Ga	+	167.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060943.1	29843801	29843970	169	Ga	+	172.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060943.1	29983678	29983764	86	S4C15H3-A.2	+	61.3	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060943.1	30185493	30185662	169	Aa	-	112.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060944.1	29769410	29769580	170	R2	-	149.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060944.1	29913073	29913247	174	Ga	+	162.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060944.1	30902006	30902178	172	Ha	-	139.2	30902018	30902178	160	Ha	-	140.0	insertion_extension	Length expanded from 160 bp to 172 bp across insertion
+NC_060944.1	31781056	31781224	168	S4C20H7.17	-	189.8	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060944.1	31904803	31904974	171	Ga	-	170.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060944.1	31963711	31963882	171	S4C13/14/21/22H9.8	+	186.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8263291	8263460	169	Ga	-	164.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8328316	8328486	170	Ga	+	156.0	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8448402	8448571	169	Ga	+	162.7	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8495716	8495885	169	Ga	+	165.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8536725	8536895	170	Ga	+	168.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8849788	8849959	171	Ga	-	156.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	8877316	8877400	84	S4C15H3-A.2	-	58.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	10004724	10004895	171	Ga	-	165.5	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	10005408	10005578	170	Ga	-	162.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060945.1	10378935	10379102	167	Ga	-	162.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060946.1	11765238	11765409	171	Ga	+	173.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060946.1	11779910	11780081	171	S4C15H3-B.17	+	169.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060946.1	12026391	12026539	148	Ga	-	106.1	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060946.1	12150848	12151019	171	Ga	+	163.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060946.1	15756146	15756316	170	Ga	-	159.9	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060947.1	57371291	57371460	169	Ia	-	129.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060947.1	57711302	57711465	163	Na	-	147.1	57711303	57711465	162	Na	-	148.0	insertion_extension	Length expanded from 162 bp to 163 bp across insertion
+NC_060947.1	60988818	60988989	171	Ga	+	178.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060947.1	61008424	61008594	170	Ga	+	174.4	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060947.1	61069553	61069724	171	Ga	+	172.8	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060948.1	10399595	10399772	177	Ga	-	141.5	10399602	10399772	170	Ga	-	140.9	insertion_extension	Length expanded from 170 bp to 177 bp across insertion
+NC_060948.1	10403084	10403254	170	Ga	-	145.2	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060948.1	10877646	10877815	169	S4CYH1L.31	-	183.6	.	.	.	.	.	.	novel_recovery	Moner novelly recovered by fixed DP
+NC_060927.1	.	.	.	.	.	.	90378810	90378980	170	Ga	-	158.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060929.1	.	.	.	.	.	.	46571046	46571210	164	Ka	-	121.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060929.1	.	.	.	.	.	.	46788995	46789166	171	Ga	+	168.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060929.1	.	.	.	.	.	.	50037579	50037750	171	Ga	-	160.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060929.1	.	.	.	.	.	.	50060410	50060576	166	Ga	-	155.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	58154050	58154221	171	Ga	-	155.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	58259811	58259982	171	S5C1H6d.1	+	174.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	58269702	58269874	172	S5C1H5d.2	+	171.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	59606278	59606448	170	Ga	-	178.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	59606918	59607089	171	Ga	-	147.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	60061197	60061368	171	Ga	+	153.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	60062047	60062217	170	Ga	+	178.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060931.1	.	.	.	.	.	.	63900008	63900165	157	Oa	+	104.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060932.1	.	.	.	.	.	.	43857327	43857491	164	Ca	+	123.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060933.1	.	.	.	.	.	.	40541175	40541345	170	Ga	+	166.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060933.1	.	.	.	.	.	.	42731519	42731690	171	Ga	-	168.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060933.1	.	.	.	.	.	.	42756051	42756220	169	Ga	-	160.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060933.1	.	.	.	.	.	.	44706856	44707026	170	Ga	+	167.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060933.1	.	.	.	.	.	.	44771217	44771388	171	Ga	+	170.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060934.1	.	.	.	.	.	.	39232889	39233039	150	Oa	+	99.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060934.1	.	.	.	.	.	.	39497684	39497855	171	Ga	-	180.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060934.1	.	.	.	.	.	.	39532543	39532712	169	Ga	-	149.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060934.1	.	.	.	.	.	.	39558319	39558490	171	Ga	-	169.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060935.1	.	.	.	.	.	.	49093751	49093922	171	R2	-	150.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060936.1	.	.	.	.	.	.	37576030	37576200	170	R2	-	156.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060936.1	.	.	.	.	.	.	37592710	37592881	171	Ga	+	162.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060936.1	.	.	.	.	.	.	37629848	37630018	170	Ga	-	168.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060936.1	.	.	.	.	.	.	37652848	37653018	170	Ga	+	167.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	11200034	11200204	170	Ga	-	166.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	11203449	11203618	169	Ga	-	158.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	11205839	11206007	168	S4C13/14/21/22H9.8	-	185.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	11253489	11253660	171	Ga	+	156.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	11432263	11432433	170	Ga	+	155.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	11773980	11774149	169	Ga	-	149.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	12983113	12983283	170	Ga	-	164.1	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	13027320	13027490	170	Ga	-	159.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	13031866	13032037	171	Ga	-	163.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	13127135	13127306	171	Ga	-	154.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060937.1	.	.	.	.	.	.	13314417	13314587	170	Ga	-	154.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	6126440	6126610	170	Ga	+	154.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	6306063	6306234	171	Ga	+	154.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	6404143	6404314	171	Ga	+	163.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	7572142	7572311	169	Ga	+	149.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8078750	8078921	171	S5C5/19H9d.6	-	142.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8081144	8081315	171	Ga	-	172.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8082682	8082853	171	Ga	-	156.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8132379	8132547	168	S4C13/14/21/22H9.8	+	185.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8134768	8134937	169	Ga	+	158.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8138182	8138352	170	Ga	+	166.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8963335	8963506	171	Ga	+	152.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8964357	8964524	167	Ga	+	160.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	8975105	8975273	168	Ga	+	158.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	9234508	9234679	171	R2	+	169.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060938.1	.	.	.	.	.	.	9825891	9826062	171	Ga	+	158.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	13988807	13988978	171	Ga	-	168.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	13991882	13992053	171	Ga	-	162.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	13994448	13994616	168	S4C13/14/21/22H9.8	-	185.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	14048726	14048897	171	Ga	+	155.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	14052657	14052828	171	R2	+	141.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	14055037	14055203	166	Ga	+	153.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	14089791	14089962	171	Ga	+	164.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	14414112	14414282	170	Ga	+	159.1	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	14953195	14953364	169	Ga	-	174.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	15143123	15143292	169	Ga	-	149.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	15924080	15924252	172	Ga	-	154.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060939.1	.	.	.	.	.	.	15995604	15995775	171	S4C15H3-B.2	-	179.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060940.1	.	.	.	.	.	.	35768882	35769053	171	Ga	-	175.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060940.1	.	.	.	.	.	.	38060148	38060317	169	Ga	-	147.1	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060941.1	.	.	.	.	.	.	27654184	27654353	169	Ga	+	158.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060943.1	.	.	.	.	.	.	24542088	24542254	166	Ga	+	155.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060943.1	.	.	.	.	.	.	25776862	25777033	171	Ga	+	168.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060943.1	.	.	.	.	.	.	25800337	25800507	170	Ga	-	156.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060943.1	.	.	.	.	.	.	29836151	29836321	170	S4C22H3.9	+	158.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060943.1	.	.	.	.	.	.	29836663	29836832	169	Ga	+	158.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060943.1	.	.	.	.	.	.	29919159	29919329	170	Ga	-	156.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	25977102	25977269	167	Ja	-	135.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	26290899	26291065	166	R2	+	147.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	29876760	29876932	172	Ga	+	165.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	29904951	29905117	166	Ga	+	141.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	29908582	29908748	166	Ga	+	151.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	29914615	29914785	170	Ga	+	170.1	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	29916420	29916590	170	Ga	+	158.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	30888298	30888469	171	Ga	+	165.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31480510	31480682	172	Ga	+	155.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31637352	31637522	170	Ga	-	164.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31722879	31723047	168	Ga	-	145.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31770120	31770291	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31774565	31774736	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31848546	31848717	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31852992	31853163	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31857438	31857609	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31861884	31862055	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31866330	31866501	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31870776	31870947	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31875222	31875393	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31879668	31879839	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31884113	31884284	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31888558	31888729	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31893004	31893175	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31897450	31897621	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060944.1	.	.	.	.	.	.	31901895	31902066	171	S4C20H8.3	-	203.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	8262093	8262263	170	Ga	-	166.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	8265508	8265677	169	Ga	-	158.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	8267898	8268066	168	S4C13/14/21/22H9.8	-	185.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	8315545	8315716	171	Ga	+	156.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	8846074	8846243	169	Ga	-	149.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	10005921	10006091	170	Ga	-	164.1	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	10040530	10040700	170	Ga	-	159.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	10045076	10045247	171	Ga	-	163.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060945.1	.	.	.	.	.	.	10379615	10379785	170	Ga	-	154.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	11764047	11764218	171	Ga	+	152.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	11764730	11764898	168	Ga	+	158.1	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	11980864	11981035	171	R2	+	169.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	12147103	12147273	170	Ga	+	163.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	12306902	12307070	168	Ga	-	161.8	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	12523542	12523713	171	Ga	+	158.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	16850246	16850417	171	Ga	+	165.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060946.1	.	.	.	.	.	.	16851270	16851441	171	Ga	+	177.3	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060947.1	.	.	.	.	.	.	57791110	57791281	171	Ga	+	169.9	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060947.1	.	.	.	.	.	.	60974033	60974203	170	Ga	+	155.2	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060947.1	.	.	.	.	.	.	60998175	60998345	170	Ga	+	164.5	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060947.1	.	.	.	.	.	.	61067668	61067839	171	Ga	+	154.0	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060947.1	.	.	.	.	.	.	61182974	61183121	147	Ca	-	109.4	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060948.1	.	.	.	.	.	.	10405649	10405818	169	Ga	-	158.6	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP
+NC_060948.1	.	.	.	.	.	.	10553086	10553256	170	Ga	-	160.7	fragment_eliminated	Spurious or truncated fragment eliminated in fixed DP

@@ -1,0 +1,23 @@
+	Command being timed: "/mnt/data/claude/2026-09-18_humas_hmmer/target/release/fasthumas -i /mnt/data/t2t/primates_t2t/gorilla/mGorGor1.mat.cur.20231122.fasta -t 96 --hor /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm --sf /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm -o /mnt/data/claude/benchmark_fasthumas/results/fasthumas/Gorilla_mGorGor1"
+	User time (seconds): 369652.03
+	System time (seconds): 159.72
+	Percent of CPU this job got: 9446%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:05:14
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 35281076
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1
+	Minor (reclaiming a frame) page faults: 39219323
+	Voluntary context switches: 28373
+	Involuntary context switches: 798352
+	Swaps: 0
+	File system inputs: 1988352
+	File system outputs: 389016
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

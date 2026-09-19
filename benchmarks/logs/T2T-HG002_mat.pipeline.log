@@ -1,0 +1,12 @@
+[2026-09-18T17:25:15Z INFO  fasthumas::pipeline] /mnt/data/t2t/HG002/hg002v1.1.mat.fasta: loaded 23 sequences, 3051.51 Mb in 11.78s
+[2026-09-18T17:25:15Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: loaded 1963 models (1278 unique names) in 0.37s
+[2026-09-18T18:03:45Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: in-memory scan completed in 2309.70s
+[2026-09-18T18:03:45Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-HORs-hmmer3.3.2-120124.hmm: junctions: 33123 gaps <= 3 bp, 21932 accounted for by trimming, 0 unresolved; sides: 7703 by consensus, 5135 by recurring variant, 9094 left alone; 17041 bases returned
+[2026-09-18T18:03:46Z INFO  fasthumas::pipeline] 483707 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-HG002_mat.AS-HOR+SF.bed
+[2026-09-18T18:03:46Z INFO  fasthumas::pipeline] 422796 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-HG002_mat.AS-HOR.bed
+[2026-09-18T18:03:46Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: loaded 39 models (39 unique names) in 0.02s
+[2026-09-18T18:05:46Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: in-memory scan completed in 119.52s
+[2026-09-18T18:05:46Z INFO  fasthumas::pipeline] /mnt/data/claude/2026-09-18_humas_hmmer/data/AS-SFs-hmmer3.0.290621.hmm: junctions: 63706 gaps <= 3 bp, 54314 accounted for by trimming, 0 unresolved; sides: 4845 by consensus, 32077 by recurring variant, 17392 left alone; 45343 bases returned
+[2026-09-18T18:05:46Z INFO  fasthumas::pipeline] 483694 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-HG002_mat.AS-SF.bed
+[2026-09-18T18:05:46Z INFO  fasthumas::pipeline] 483694 records -> /mnt/data/claude/benchmark_fasthumas/results/fasthumas/T2T-HG002_mat.AS-strand.bed
+[2026-09-18T18:05:47Z INFO  fasthumas::pipeline] Combined HOR+SF pipeline completed in 2443.33s

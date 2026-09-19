@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""
+Comprehensive concordance analysis between FastHumAS and legacy HumAS-HMMER (nhmmer)
+across finished T2T-CHM13 chromosomes.
+
+Evaluates:
+- Discovery union (all detected alpha-satellite loci)
+- Mutual overlap (reciprocal overlap >= 50% and >= 80%)
+- Boundary concordances (exact 0 bp, <= 3 bp, <= 10 bp)
+- Label / subfamily concordance on overlapping records
+- Strand concordance
+- Sensitivity, precision, and discordant (method-unique) loci characteristics
+"""
+
+import sys
+import os
+import glob
+from collections import defaultdict
+
+def load_bed(path):
+    records = []
+    if not os.path.exists(path):
+        return records
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 6:
+                chrom = parts[0]
+                start = int(parts[1])
+                end = int(parts[2])
+                name = parts[3]
+                score = float(parts[4])
+                strand = parts[5]
+                records.append({
+                    "chrom": chrom,
+                    "start": start,
+                    "end": end,
+                    "length": end - start,
+                    "name": name,
+                    "score": score,
+                    "strand": strand,
+                })
+    return records
+
+def analyze_chromosome(chrom, fasthumas_recs, legacy_recs):
+    # Sort by start
+    f_sorted = sorted(fasthumas_recs, key=lambda x: x["start"])
+    l_sorted = sorted(legacy_recs, key=lambda x: x["start"])
+
+    # Build interval tree / search for overlaps
+    # For each legacy rec, find overlapping fasthumas recs
+    matched_f = set()
+    matched_l = set()
+
+    exact_boundary = 0
+    within_3bp_boundary = 0
+    within_10bp_boundary = 0
+    label_exact_match = 0
+    strand_match = 0
+
+    overlap_pairs = []
+
+    f_idx = 0
+    for l_i, l_rec in enumerate(l_sorted):
+        l_s, l_e = l_rec["start"], l_rec["end"]
+        best_overlap = 0
+        best_f_i = None
+
+        # Advance f_idx
+        while f_idx < len(f_sorted) and f_sorted[f_idx]["end"] <= l_s:
+            f_idx += 1
+
+        curr = f_idx
+        while curr < len(f_sorted) and f_sorted[curr]["start"] < l_e:
+            f_rec = f_sorted[curr]
+            ov_s = max(l_s, f_rec["start"])
+            ov_e = min(l_e, f_rec["end"])
+            ov = max(0, ov_e - ov_s)
+            if ov > best_overlap:
+                best_overlap = ov
+                best_f_i = curr
+            curr += 1
+
+        if best_f_i is not None:
+            f_rec = f_sorted[best_f_i]
+            # check reciprocal overlap >= 50%
+            min_len = min(l_rec["length"], f_rec["length"])
+            if best_overlap >= 0.5 * min_len:
+                matched_l.add(l_i)
+                matched_f.add(best_f_i)
+                d_start = abs(l_s - f_rec["start"])
+                d_end = abs(l_e - f_rec["end"])
+
+                if d_start == 0 and d_end == 0:
+                    exact_boundary += 1
+                if d_start <= 3 and d_end <= 3:
+                    within_3bp_boundary += 1
+                if d_start <= 10 and d_end <= 10:
+                    within_10bp_boundary += 1
+
+                if l_rec["name"] == f_rec["name"]:
+                    label_exact_match += 1
+                if l_rec["strand"] == f_rec["strand"]:
+                    strand_match += 1
+
+                overlap_pairs.append((f_rec, l_rec))
+
+    n_f = len(f_sorted)
+    n_l = len(l_sorted)
+    n_matched = len(matched_l)
+
+    return {
+        "chrom": chrom,
+        "n_fasthumas": n_f,
+        "n_legacy": n_l,
+        "n_overlapping": n_matched,
+        "exact_boundary": exact_boundary,
+        "within_3bp_boundary": within_3bp_boundary,
+        "within_10bp_boundary": within_10bp_boundary,
+        "label_exact_match": label_exact_match,
+        "strand_match": strand_match,
+        "f_unique": n_f - len(matched_f),
+        "l_unique": n_l - n_matched,
+    }
+
+def main():
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} <fasthumas_bed> <legacy_dir>")
+        sys.exit(1)
+
+    fasthumas_path = sys.argv[1]
+    legacy_dir = sys.argv[2]
+
+    print("Loading FastHumAS BED...")
+    all_f_recs = load_bed(fasthumas_path)
+    f_by_chrom = defaultdict(list)
+    for r in all_f_recs:
+        f_by_chrom[r["chrom"]].append(r)
+
+    legacy_files = glob.glob(os.path.join(legacy_dir, "AS-HOR+SF-vs-*.bed"))
+    if not legacy_files:
+        print(f"No legacy BED files found in {legacy_dir}!")
+        sys.exit(1)
+
+    print(f"Found {len(legacy_files)} finished legacy chromosome files in {legacy_dir}")
+    print("=" * 80)
+    print(f"{'Chrom':<14} | {'FastHumAS':<10} | {'Legacy':<8} | {'Overlap':<8} | {'Sens %':<7} | {'Prec %':<7} | {'<=3bp Bdry':<11} | {'Label Agr':<10} | {'Strand Agr':<10}")
+    print("-" * 80)
+
+    total_f = 0
+    total_l = 0
+    total_ov = 0
+    total_exact = 0
+    total_3bp = 0
+    total_10bp = 0
+    total_label = 0
+    total_strand = 0
+    total_f_uniq = 0
+    total_l_uniq = 0
+
+    for leg_file in sorted(legacy_files):
+        # filename format: AS-HOR+SF-vs-NC_060946.1.bed
+        base = os.path.basename(leg_file)
+        chrom = base.replace("AS-HOR+SF-vs-", "").replace(".bed", "")
+        leg_recs = load_bed(leg_file)
+        fasthumas_recs = f_by_chrom[chrom]
+
+        stats = analyze_chromosome(chrom, fasthumas_recs, leg_recs)
+
+        sens = (stats["n_overlapping"] / stats["n_legacy"] * 100.0) if stats["n_legacy"] > 0 else 0.0
+        prec = (stats["n_overlapping"] / stats["n_fasthumas"] * 100.0) if stats["n_fasthumas"] > 0 else 0.0
+        bdry3_pct = (stats["within_3bp_boundary"] / stats["n_overlapping"] * 100.0) if stats["n_overlapping"] > 0 else 0.0
+        label_pct = (stats["label_exact_match"] / stats["n_overlapping"] * 100.0) if stats["n_overlapping"] > 0 else 0.0
+        strand_pct = (stats["strand_match"] / stats["n_overlapping"] * 100.0) if stats["n_overlapping"] > 0 else 0.0
+
+        print(f"{chrom:<14} | {stats['n_fasthumas']:<10} | {stats['n_legacy']:<8} | {stats['n_overlapping']:<8} | {sens:6.2f}% | {prec:6.2f}% | {bdry3_pct:6.2f}% ({stats['within_3bp_boundary']}) | {label_pct:6.2f}% | {strand_pct:6.2f}%")
+
+        total_f += stats["n_fasthumas"]
+        total_l += stats["n_legacy"]
+        total_ov += stats["n_overlapping"]
+        total_exact += stats["exact_boundary"]
+        total_3bp += stats["within_3bp_boundary"]
+        total_10bp += stats["within_10bp_boundary"]
+        total_label += stats["label_exact_match"]
+        total_strand += stats["strand_match"]
+        total_f_uniq += stats["f_unique"]
+        total_l_uniq += stats["l_unique"]
+
+    print("=" * 80)
+    total_sens = (total_ov / total_l * 100.0) if total_l > 0 else 0.0
+    total_prec = (total_ov / total_f * 100.0) if total_f > 0 else 0.0
+    total_bdry3 = (total_3bp / total_ov * 100.0) if total_ov > 0 else 0.0
+    total_label_pct = (total_label / total_ov * 100.0) if total_ov > 0 else 0.0
+    total_strand_pct = (total_strand / total_ov * 100.0) if total_ov > 0 else 0.0
+
+    print(f"{'TOTAL / MEAN':<14} | {total_f:<10} | {total_l:<8} | {total_ov:<8} | {total_sens:6.2f}% | {total_prec:6.2f}% | {total_bdry3:6.2f}% ({total_3bp}) | {total_label_pct:6.2f}% | {total_strand_pct:6.2f}%")
+    print(f"\nExact Boundary (=0 bp): {total_exact} ({total_exact/total_ov*100:.2f}%)")
+    print(f"Boundary within <=10 bp: {total_10bp} ({total_10bp/total_ov*100:.2f}%)")
+    print(f"FastHumAS unique (not in legacy): {total_f_uniq} ({total_f_uniq/total_f*100:.2f}%)")
+    print(f"Legacy unique (not in FastHumAS): {total_l_uniq} ({total_l_uniq/total_l*100:.2f}%)")
+
+if __name__ == "__main__":
+    main()

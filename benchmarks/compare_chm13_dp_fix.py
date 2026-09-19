@@ -33,17 +33,25 @@ def main():
     print(f"New Run (Fixed Gotoh DP): {len(new_recs)} records")
     print(f"Old Run (Pre-fix DP):     {len(old_recs)} records")
 
-    new_set = set((r[0], r[1], r[2], r[3], r[5]) for r in new_recs)
-    old_set = set((r[0], r[1], r[2], r[3], r[5]) for r in old_recs)
+    new_dict = {(r[0], r[1], r[2], r[3], r[5]): r[4] for r in new_recs}
+    old_dict = {(r[0], r[1], r[2], r[3], r[5]): r[4] for r in old_recs}
+
+    new_set = set(new_dict.keys())
+    old_set = set(old_dict.keys())
 
     identical = new_set & old_set
     new_only = new_set - old_set
     old_only = old_set - new_set
 
+    # Verify score agreement among matching records
+    score_diffs = sum(1 for k in identical if abs(new_dict[k] - old_dict[k]) > 1e-4)
+
     pct = len(identical) / len(new_recs) * 100
-    print(f"Exact bit-for-bit identical (chrom, start, end, name, strand): {len(identical)} ({pct:.3f}%)")
-    print(f"Only in new (fixed): {len(new_only)}")
-    print(f"Only in old (buggy): {len(old_only)}")
+    print(f"Verified concordant across (chrom, start, end, label, strand): {len(identical)} ({pct:.3f}%)")
+    print(f"Identical score (within 1e-4 bit): {len(identical) - score_diffs} / {len(identical)}")
+    print(f"Only in new (fixed Gotoh DP): {len(new_only)}")
+    print(f"Only in old (pre-fix DP):     {len(old_only)}")
+    print(f"Symmetric difference:        {len(new_only) + len(old_only)}")
 
 if __name__ == "__main__":
     main()
