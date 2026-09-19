@@ -50,7 +50,7 @@ def main():
         sys.exit(1)
 
     train_chroms = {"NC_060925.1", "NC_060927.1", "NC_060932.1"} # chr1, chr3, chr8
-    test_chroms = {"NC_060934.1", "NC_060935.1", "NC_060936.1", "NC_060938.1", "NC_060946.1", "NC_060948.1"}
+    test_chroms = {"NC_060934.1", "NC_060935.1", "NC_060936.1", "NC_060938.1", "NC_060941.1", "NC_060946.1", "NC_060948.1"}
 
     train_ratios = []
     test_ratios = []
@@ -98,7 +98,7 @@ def main():
     print(f"  Interquartile Range (IQR):     [{np.percentile(train_r, 25):.4f}, {np.percentile(train_r, 75):.4f}]")
     print(f"  95% empirical range:           [{np.percentile(train_r, 2.5):.4f}, {np.percentile(train_r, 97.5):.4f}]")
 
-    print(f"\nIndependent Validation set (chr10, 11, 12, 14, 22, Y): n = {len(test_r)}")
+    print(f"\nIndependent Validation set (chr10, 11, 12, 14, 17, 22, Y): n = {len(test_r)}")
     print(f"  Mean ratio (HMMER / raw Gotoh): {test_r.mean():.4f} +/- {test_r.std():.4f} (SD)")
     print(f"  Standard Error of Mean (SEM):  {test_r.std() / np.sqrt(len(test_r)):.6f}")
     print(f"  Median ratio:                  {np.median(test_r):.4f}")
