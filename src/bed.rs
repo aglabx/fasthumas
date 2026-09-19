@@ -63,6 +63,8 @@ pub fn sort_bed_records(records: &mut [BedRecord]) {
             .cmp(&b.chrom)
             .then(a.start.cmp(&b.start))
             .then(a.end.cmp(&b.end))
+            .then(a.name.cmp(&b.name))
+            .then(a.strand.cmp(&b.strand))
     });
 }
 

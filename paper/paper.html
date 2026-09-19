@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>FastHumAS: Ultra-Fast In-Memory Annotation of Centromeric Alpha-Satellite Higher-Order Repeats in Complete Genomes</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css" />
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
+  type="text/javascript"></script>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">FastHumAS: Ultra-Fast In-Memory Annotation of
+Centromeric Alpha-Satellite Higher-Order Repeats in Complete
+Genomes</h1>
+</header>
+<h1
+id="fasthumas-ultra-fast-in-memory-annotation-of-centromeric-alpha-satellite-higher-order-repeats-in-complete-genomes">FastHumAS:
+Ultra-Fast In-Memory Annotation of Centromeric Alpha-Satellite
+Higher-Order Repeats in Complete Genomes</h1>
+<p><strong>Authors:</strong> Marina Popova<span
+class="math inline">\(^{1}\)</span>, Simona Giunta<span
+class="math inline">\(^{1}\)</span>, and Aleksey Komissarov<span
+class="math inline">\(^{1,2,*}\)</span><br />
+<span class="math inline">\(^{1}\)</span> Department of Biology and
+Biotechnology “Charles Darwin”, Sapienza University of Rome, 00185 Rome,
+Italy<br />
+<span class="math inline">\(^{2}\)</span> Department of Computer
+Science, Neapolis University Pafos, 8042 Pafos, Cyprus<br />
+<span class="math inline">\(^*\)</span> To whom correspondence should be
+addressed: <code>a.komissarov@nup.ac.cy</code></p>
+<hr />
+<h2 id="abstract">Abstract</h2>
+<p><strong>Summary:</strong> Human and primate centromeres are
+characterized by megabase-scale arrays of ~171 bp alpha-satellite tandem
+repeats. In human centromeres, active kinetochore domains are
+predominantly organized into chromosome-specific Higher-Order Repeats
+(HORs) derived from younger suprachromosomal families (SF1–SF3), flanked
+by divergent monomeric layers from ancestral lineages (SF4/SF5), whereas
+non-human hominids exhibit divergent evolutionary architectures
+including SF5 predominance in orangutans. Telomere-to-telomere (T2T)
+assemblies now provide access to previously unresolved centromeric
+regions. However, standard pipelines—notably HumAS-HMMER—rely on
+external toolchains (<code>nhmmer</code>, <code>awk</code>,
+<code>sort</code>, <code>bedmap</code>, <code>python</code>) that incur
+severe I/O bottlenecks (&gt;140 GB intermediate disk files per genome),
+suffer from an off-by-one minus-strand coordinate shift inducing
+~190,000–200,000 artificial 2-bp gaps across the genome, and leave 1–3
+bp inter-monomer boundary gaps due to local alignment trimming. Here, we
+present <strong>FastHumAS</strong>, a high-performance, pure-Rust
+annotation engine for alpha-satellite repeat classification in complete
+genomes. FastHumAS couples an in-memory two-stage scanning
+architecture—combining a 171-bp consensus Master Profile filter with
+bounded dynamic programming against 1,963 monomer-level HOR models and
+39 SF models—with consensus-anchored junction healing and simultaneous
+multi-track BED generation. Across complete reference assemblies,
+FastHumAS annotates the 3.12-Gb T2T-CHM13 genome in <strong>38m
+55s</strong> on 96 threads (peak RSS 31.80 GB, 0 GB disk churn),
+achieving a <strong>23.4× wall-clock speedup</strong> over the parallel
+multi-chromosome legacy baseline (15.2 hours) and
+<strong>&gt;55×</strong> over sequential execution. Direct
+whole-chromosome benchmarking against legacy <code>nhmmer</code>
+demonstrates <strong>99.37% sensitivity, 99.96% precision, 100.00%
+strand concordance, and 99.28% label agreement</strong>, while
+increasing flush inter-monomer junctions from 32.7% to 93.0% without
+altering authentic biological insertions.<br />
+<strong>Availability and Implementation:</strong> FastHumAS is
+implemented in pure Rust and freely available under the MIT license at
+<a
+href="https://github.com/aglabx/fasthumas">https://github.com/aglabx/fasthumas</a>.</p>
+<hr />
+<h2 id="introduction">1. Introduction</h2>
+<p>Centromeres are the structural and epigenetic loci essential for
+faithful chromosome segregation during eukaryotic mitosis and meiosis
+(Cleveland <em>et al.</em>, 2003; Altemose <em>et al.</em>, 2022). In
+humans and non-human hominids, centromeres are dominated by
+alpha-satellite DNA: head-to-tail tandem repeats with a canonical
+monomeric periodicity of approximately 171 base pairs (bp) (Willard and
+Waye, 1987; Alexandrov <em>et al.</em>, 1993). Alpha-satellite sequences
+are grouped into five major suprachromosomal families (SF1–SF5). In
+active human centromeric arrays, monomers belonging predominantly to
+younger lineages (SF1, SF2, and SF3) have undergone concerted
+homogenization and amplification into multimeric Higher-Order Repeat
+(HOR) units spanning megabases of sequence, whereas flanking
+pericentromeric regions frequently retain monomeric, divergent
+alpha-satellite from older lineages (SF4 and SF5) (Shepelev <em>et
+al.</em>, 2015; Uralsky <em>et al.</em>, 2019). The functional
+kinetochore-assembly core corresponds to the CENP-A chromatin domain,
+which occupies a localized subdomain spanning 190–570 kb (7–24% of the
+active HOR array on human chromosomes; Altemose <em>et al.</em>, 2022),
+with flanking HOR arrays enriched in heterochromatic H3K9me3 marks.
+Across non-human hominids, centromeres exhibit distinct evolutionary
+histories, including extensive homogenization of SF5 monomer arrays in
+orangutan (<em>Pongo</em>) centromeres (Yoo <em>et al.</em>, 2025).</p>
+<p>With telomere-to-telomere (T2T) human genome assemblies (Nurk <em>et
+al.</em>, 2022), diploid human pangenomes (Jarvis <em>et al.</em>, 2022;
+Porubsky <em>et al.</em>, 2024), and complete primate genome assemblies
+(Yoo <em>et al.</em>, 2025), comprehensive centromeric satellite
+annotation has become a standard requirement in genome curation
+pipelines.</p>
+<p>The established standard for alpha-satellite annotation is the
+<strong>HumAS-HMMER</strong> pipeline (Uralsky <em>et al.</em>, 2019)
+and its AnVIL/T2T workflow implementations (<code>alphaSat-HMMER</code>;
+Miga <em>et al.</em>, 2020). HumAS-HMMER queries target assemblies
+against comprehensive Profile Hidden Markov Models (HMMs) using
+<code>nhmmer</code> (Wheeler and Eddy, 2013). While the biological
+profile models are robust, the shell-based orchestration suffers from
+significant computational and algorithmic limitations: 1. <strong>Severe
+I/O Bottlenecks and Intermediate Disk Churn:</strong> The legacy
+pipeline sequentially pipes intermediate data through external utilities
+(<code>nhmmer</code> <span class="math inline">\(\rightarrow\)</span>
+<code>hmmertblout2bed.awk</code> <span
+class="math inline">\(\rightarrow\)</span> <code>sort</code> <span
+class="math inline">\(\rightarrow\)</span> <code>bedmap</code> <span
+class="math inline">\(\rightarrow\)</span> <code>awk</code> <span
+class="math inline">\(\rightarrow\)</span>
+<code>overlap_filter.py</code>). For a single 3.1-Gb genome,
+<code>nhmmer</code> writes tens of gigabytes of text tabular files
+(<code>--tblout</code>), and downstream sorting and bedmapping generate
+over 140 GB of intermediate files on disk. 2. <strong>Minus-Strand
+Coordinate Truncation:</strong> In <code>hmmertblout2bed.awk</code>,
+coordinate conversion on the reverse-complement strand contained an
+asymmetric 0-based offset adjustment
+(<code>aliFrom = $7 - 1; aliTo = $8</code>). Because <code>$7</code>
+represents the higher genomic coordinate on the minus strand,
+subtracting 1 from <code>$7</code> placed the adjustment on the wrong
+boundary while leaving <code>$8</code> unadjusted. Consequently, every
+minus-strand annotation was shifted 1 bp to the right and shortened by 2
+bp, distorting length distributions and artificially inducing
+~190,000–200,000 2-bp gaps between flush minus-strand monomers across
+the human genome. 3. <strong>Boundary Trimming and Heuristic
+Micro-Gaps:</strong> Profile HMM local alignments drop terminal residues
+whose posterior alignment probability falls below heuristic cutoffs due
+to register ambiguity at tandem monomer junctions. This leaves
+artificial 1–3 bp unannotated “micro-gaps” between monomers that are
+contiguous in the underlying sequence. 4. <strong>Telomeric Alphabet
+Crashes:</strong> Older HMMER versions (≤3.3.2) attempt to infer target
+alphabet from leading residues and crash on long telomeric repeat arrays
+(<code>TAACCCTAACCC...</code>) with
+<code>Invalid alphabet type in target for nhmmer</code>.</p>
+<p>To address these limitations, we developed
+<strong>FastHumAS</strong>, an in-memory, pure-Rust annotation engine
+for scalable centromeric alpha-satellite classification.</p>
+<hr />
+<h2 id="methods-and-implementation">2. Methods and Implementation</h2>
+<p>FastHumAS replaces the multi-tool shell pipeline with a standalone,
+self-contained executable. It processes complete multi-sequence FASTA
+files in memory, avoiding intermediate scratch files while executing a
+two-stage dynamic programming architecture with automated junction
+healing and simultaneous multi-track BED generation.</p>
+<h3 id="two-stage-in-memory-scanning-architecture">2.1 Two-Stage
+In-Memory Scanning Architecture</h3>
+<p>Alpha-satellite monomer identification against a library of 1,963
+HOR-associated monomer models (lengths 88–176 bp) and 39 SF models
+(lengths 167–174 bp, mean 170.8 bp) across a 3.1-Gb genome represents a
+demanding search space. FastHumAS accelerates this search via a
+two-stage filter:</p>
+<h4 id="stage-1-consensus-master-profile-filter">Stage 1: Consensus
+Master Profile Filter</h4>
+<p>We construct a 171-bp <strong>Master Consensus Profile</strong> by
+averaging log-odds match scores across the canonical 171-bp
+alpha-satellite models in the collection. Sequences are partitioned into
+256-kb chunks and evaluated in parallel via Rayon work-stealing
+threads.</p>
+<p>Within each chunk, candidate monomer end boundaries are identified
+using a streaming affine-gap dynamic programming filter (Gotoh
+recurrence): <span class="math display">\[E[i, j] = \max(H[i, j-1] +
+\gamma_{\text{open}}, E[i, j-1] + \gamma_{\text{ext}})\]</span> <span
+class="math display">\[F[i, j] = \max(H[i-1, j] + \gamma_{\text{open}},
+F[i-1, j] + \gamma_{\text{ext}})\]</span> <span
+class="math display">\[H[i, j] = \max(0, H[i-1, j-1] + S[i-1, b], E[i,
+j], F[i, j])\]</span> where <span
+class="math inline">\(\gamma_{\text{open}} = -5.0\)</span> and <span
+class="math inline">\(\gamma_{\text{ext}} = -0.6\)</span>. The DP
+recurrence is computed using rolling vectors totaling 1,376 bytes per
+thread. Candidate monomer end positions are recorded at local score
+maxima clearing <span class="math inline">\(S \ge 35.0\)</span>.</p>
+<h4
+id="stage-2-bounded-dynamic-programming-candidate-filtering-and-calibration">Stage
+2: Bounded Dynamic Programming, Candidate Filtering, and
+Calibration</h4>
+<p>For each candidate peak, a target sequence slice (<span
+class="math inline">\(\sim 200\)</span> bp) is evaluated against the
+individual Profile HMM models using a semi-global alignment anchored to
+the profile boundaries with an asymmetric band: <span
+class="math display">\[j \in [\text{expected} - 14, \text{expected} +
+28]\]</span> This asymmetric band accommodates monomer deletions down to
+<span class="math inline">\(\sim 157\)</span> bp and insertions up to
+<span class="math inline">\(\sim 199\)</span> bp. The forward dynamic
+programming path terminates once the sequence position reaches <span
+class="math inline">\(k \ge L - 5\)</span> (where <span
+class="math inline">\(L \approx 171\)</span> bp is canonical monomer
+length), capturing contractions while enforcing profile boundaries.</p>
+<p>To bridge Gotoh PSSM match log-odds sums to HMMER’s Null2-adjusted
+bit score scale, raw dynamic programming scores are linearly scaled:
+<span class="math display">\[\text{Score}_{\text{scaled}} = 0.85 \times
+\text{Score}_{\text{Gotoh}}\]</span> Empirical calibration across 81,650
+exact-boundary, model-matched monomers confirms that this <span
+class="math inline">\(0.85\)</span> factor maps Gotoh log-odds sums to
+HMMER bit scores with high consistency: - <strong>Training split (chr1,
+chr3, chr8; <span class="math inline">\(n = 23,506\)</span>):</strong>
+Mean ratio <span class="math inline">\(0.8495 \pm 0.0074\)</span> (SD),
+SEM <span class="math inline">\(0.000048\)</span>, Median <span
+class="math inline">\(0.8504\)</span> (IQR: 0.8469–0.8534). -
+<strong>Independent validation set (chr10, chr11, chr12, chr14, chr17,
+chr22, chrY; <span class="math inline">\(n = 58,144\)</span>):</strong>
+Mean ratio <span class="math inline">\(0.8484 \pm 0.0084\)</span> (SD),
+SEM <span class="math inline">\(0.000035\)</span>, Median <span
+class="math inline">\(0.8500\)</span> (IQR: 0.8461–0.8535). -
+<strong>Score Stratification:</strong> For canonical high-scoring
+monomers (<span class="math inline">\(\ge 150\)</span> bits,
+representing 98.4% of matched pairs), the mean ratio is <span
+class="math inline">\(0.8507 \pm 0.0065\)</span> (median 0.8517). In the
+lower score regime (100–150 bits, 1.6% of pairs), the mean ratio is
+<span class="math inline">\(0.8198 \pm 0.0128\)</span> (median 0.8210),
+reflecting the proportionately larger impact of HMMER’s
+composition-dependent Null2 corrections on lower-scoring alignments
+(+3.6% relative difference).</p>
+<p>Candidate hits are evaluated against the score density threshold:
+<span
+class="math display">\[\frac{\text{Score}_{\text{scaled}}}{\text{Alignment
+Length}} \ge \text{threshold} - 0.05\]</span> (evaluated to 1 decimal
+place with default threshold <span class="math inline">\(0.70\)</span>),
+matching canonical HumAS-HMMER sensitivity.</p>
+<h4 id="overlap-resolution-and-non-maximum-suppression">Overlap
+Resolution and Non-Maximum Suppression</h4>
+<p>Overlapping candidate alignments are filtered through a 3-stage
+pipeline matching BEDOPS and legacy HumAS-HMMER conventions: 1.
+<strong>Local Non-Maximum Suppression
+(<code>bedmap --max-element --fraction-either 0.1</code>):</strong> For
+each candidate interval, FastHumAS identifies all overlapping intervals
+sharing <span class="math inline">\(\ge 10\%\)</span> overlap with
+either element and maps the reference interval to the highest-scoring
+candidate (breaking rare score ties by start coordinate, then length).
+This operates as reference-anchored local non-maximum suppression rather
+than transitive cluster reduction, ensuring that non-overlapping
+elements linked only through an intermediate lower-scoring candidate are
+correctly preserved. 2. <strong>Exact Deduplication
+(<code>exact_dedup</code>):</strong> Preserves the first occurrence of
+each unique BED9 record. 3. <strong>Near-Duplicate Suppression
+(<code>near_dedup</code>):</strong> Sequentially eliminates records
+whose start or end coordinates lie within <span
+class="math inline">\(\pm 10\)</span> bp of an adjacent higher-scoring
+survivor.</p>
+<h3 id="corrected-minus-strand-coordinate-symmetry">2.2 Corrected
+Minus-Strand Coordinate Symmetry</h3>
+<p>Target sequences are scanned in both forward (<span
+class="math inline">\(+\)</span>) and reverse-complement (<span
+class="math inline">\(-\)</span>) orientations. On the minus strand,
+FastHumAS computes half-open 0-based BED coordinates using symmetric
+interval projection: <span class="math display">\[\text{chromStart} =
+\min(\text{aliFrom}, \text{aliTo}) - 1, \quad \text{chromEnd} =
+\max(\text{aliFrom}, \text{aliTo})\]</span> This restores mathematical
+symmetry between forward and reverse-complement strands, rectifying the
+legacy 1-bp shift and 2-bp truncation.</p>
+<h3 id="junction-boundary-healing">2.3 Junction Boundary Healing</h3>
+<p>To distinguish between true sequence insertions/deletions and
+heuristic alignment boundary trimming: 1. <strong>Model Consensus
+Matching:</strong> Gaps <span class="math inline">\(\le 3\)</span> bp
+between adjacent monomers are compared against the consensus sequence of
+the bordering models (<code>hmmemit -c</code>). If untrimmed bases match
+the model consensus at <span class="math inline">\(\ge 50\%\)</span>
+identity, they are restored to the respective monomer. 2.
+<strong>Empirical Array Recurrence:</strong> If a variant base recurs
+<span class="math inline">\(\ge 10\)</span> times at that relative model
+position globally across the input FASTA with <span
+class="math inline">\(\ge 50\%\)</span> recurrence frequency, it is
+recognized as an authentic polymorphic variant and assigned to the
+monomer boundary. 3. <strong>Biological Interruption
+Preservation:</strong> True biological insertions and inter-monomer
+interruptions (&gt;3 bp), as well as non-canonical divergent transitions
+failing consensus/recurrence criteria, remain deliberately unhealed,
+preserving genuine structural interruptions in satellite arrays.</p>
+<h3 id="multi-track-generation">2.4 Multi-Track Generation</h3>
+<p>In combined execution mode (<code>--hor</code> + <code>--sf</code>),
+FastHumAS generates four standard T2T CenSat tracks in a single run: -
+<strong><code>AS-HOR+SF.bed</code></strong>: Composite track generated
+from the comprehensive HOR profile library (which incorporates generic
+SF models as fallback), prioritizing HOR monomer calls with SF monomer
+fallback and styled with the canonical 218-color RGB palette. -
+<strong><code>AS-HOR.bed</code></strong>: HOR-associated monomer calls
+only (filtering out 2-letter divergent/SF calls). -
+<strong><code>AS-SF.bed</code></strong>: Suprachromosomal family
+classifications across all alpha-satellite loci from the SF profile
+pass. - <strong><code>AS-strand.bed</code></strong>: Polarity track
+colored by strand (Blue <code>0,0,255</code> for <span
+class="math inline">\(+\)</span>, Red <code>255,0,0</code> for <span
+class="math inline">\(-\)</span>) to visualize array inversions.</p>
+<hr />
+<h2 id="results-and-benchmarks">3. Results and Benchmarks</h2>
+<p>We evaluated FastHumAS across complete human and non-human hominid
+telomere-to-telomere assemblies on a dual-socket AMD EPYC 9654 server
+(total 192 physical cores, 384 hardware threads, 2.9 TB DDR5 RAM),
+allocating 96 worker threads per run (<code>-t 96</code>).</p>
+<h3 id="computational-performance-and-resource-consumption">3.1
+Computational Performance and Resource Consumption</h3>
+<p>Table 1 summarizes empirical wall-clock time, peak resident set size
+(RSS), and record counts across seven complete T2T reference
+assemblies:</p>
+<table>
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Genome Assembly</th>
+<th>Species</th>
+<th style="text-align: center;">Assembly Size</th>
+<th style="text-align: center;">Threads</th>
+<th style="text-align: center;">Wall Clock Time</th>
+<th style="text-align: center;">Peak RSS</th>
+<th style="text-align: center;">Scratch Disk</th>
+<th style="text-align: center;">AS-HOR+SF Records</th>
+<th style="text-align: center;">AS-HOR Records</th>
+<th style="text-align: center;">AS-SF Records</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>T2T-CHM13 v2.0</strong></td>
+<td><em>Homo sapiens</em></td>
+<td style="text-align: center;">3,117.28 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>38m 55s</strong></td>
+<td style="text-align: center;">31.80 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">488,754</td>
+<td style="text-align: center;">429,212</td>
+<td style="text-align: center;">488,695</td>
+</tr>
+<tr class="even">
+<td><strong>T2T-HG002 mat</strong></td>
+<td><em>Homo sapiens</em></td>
+<td style="text-align: center;">3,051.51 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>40m 44s</strong></td>
+<td style="text-align: center;">31.17 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">483,707</td>
+<td style="text-align: center;">422,796</td>
+<td style="text-align: center;">483,694</td>
+</tr>
+<tr class="odd">
+<td><strong>T2T-RPE1 hap1</strong></td>
+<td><em>Homo sapiens</em></td>
+<td style="text-align: center;">3,064.05 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>47m 21s</strong></td>
+<td style="text-align: center;">31.29 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">467,998</td>
+<td style="text-align: center;">409,679</td>
+<td style="text-align: center;">468,063</td>
+</tr>
+<tr class="even">
+<td><strong>mPanTro3</strong></td>
+<td><em>Pan troglodytes</em></td>
+<td style="text-align: center;">3,034.92 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>39m 51s</strong></td>
+<td style="text-align: center;">30.96 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">403,303</td>
+<td style="text-align: center;">313,725</td>
+<td style="text-align: center;">403,321</td>
+</tr>
+<tr class="odd">
+<td><strong>mPanPan1</strong></td>
+<td><em>Pan paniscus</em></td>
+<td style="text-align: center;">3,210.03 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>38m 56s</strong></td>
+<td style="text-align: center;">31.47 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">357,593</td>
+<td style="text-align: center;">265,519</td>
+<td style="text-align: center;">357,671</td>
+</tr>
+<tr class="even">
+<td><strong>mGorGor1</strong></td>
+<td><em>Gorilla gorilla</em></td>
+<td style="text-align: center;">3,554.71 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>1h 05m 14s</strong></td>
+<td style="text-align: center;">36.13 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">660,556</td>
+<td style="text-align: center;">600,595</td>
+<td style="text-align: center;">660,565</td>
+</tr>
+<tr class="odd">
+<td><strong>mPonPyg2</strong></td>
+<td><em>Pongo pygmaeus</em></td>
+<td style="text-align: center;">3,171.52 Mb</td>
+<td style="text-align: center;">96</td>
+<td style="text-align: center;"><strong>1h 04m 52s</strong></td>
+<td style="text-align: center;">32.53 GB</td>
+<td style="text-align: center;"><strong>0 GB</strong></td>
+<td style="text-align: center;">772,095</td>
+<td style="text-align: center;">345,873</td>
+<td style="text-align: center;">772,161</td>
+</tr>
+<tr class="even">
+<td><strong>HumAS-HMMER (Parallel)</strong></td>
+<td><em>Homo sapiens</em></td>
+<td style="text-align: center;">3,117.28 Mb</td>
+<td style="text-align: center;">48</td>
+<td style="text-align: center;"><strong>~15h 12m</strong></td>
+<td style="text-align: center;">Multi-GB</td>
+<td style="text-align: center;"><strong>&gt;140 GB</strong></td>
+<td style="text-align: center;">~488,500</td>
+<td style="text-align: center;">~428,900</td>
+<td style="text-align: center;">~488,500</td>
+</tr>
+<tr class="odd">
+<td><strong>HumAS-HMMER (Sequential)</strong></td>
+<td><em>Homo sapiens</em></td>
+<td style="text-align: center;">3,117.28 Mb</td>
+<td style="text-align: center;">48</td>
+<td style="text-align: center;"><strong>~36–52h</strong></td>
+<td style="text-align: center;">Multi-GB</td>
+<td style="text-align: center;"><strong>&gt;140 GB</strong></td>
+<td style="text-align: center;">~488,500</td>
+<td style="text-align: center;">~428,900</td>
+<td style="text-align: center;">~488,500</td>
+</tr>
+</tbody>
+</table>
+<p><em>Table 1: Whole-genome annotation benchmarks on a dual AMD EPYC
+9654 server (2.9 TB RAM, 96 worker threads allocated). Assembly sizes
+reflect total nucleotide counts from assembly <code>.fai</code> indexes.
+Wall-clock times for FastHumAS reflect end-to-end execution on complete
+un-sliced genome FASTAs with simultaneous four-track generation. Peak
+RSS (31.0–36.1 GB, corresponding to 30.2–35.3 GiB) accounts for
+in-memory sequence storage and parallel DP state. For legacy HumAS-HMMER
+on CHM13, the parallel multi-chromosome configuration is estimated at
+~15.2 hours (23.4× slower than FastHumAS), while default sequential
+chromosome execution is estimated at ~36–52 hours (&gt;55× slower;
+measured at 130 minutes on chr22 alone, extrapolated across the 24
+assembly chromosomes).</em></p>
+<p>Across all mammalian assemblies, FastHumAS completes whole-genome
+annotation in <strong>38–47 minutes</strong> for human and chimpanzee
+genomes and ~65 minutes for complex hominids with expanded arrays
+(gorilla and orangutan), delivering a <strong>23.4× wall-clock
+acceleration</strong> over parallel legacy pipelines and
+<strong>&gt;55×</strong> over sequential execution.</p>
+<h3 id="annotation-accuracy-and-concordance-with-legacy-humas-hmmer">3.2
+Annotation Accuracy and Concordance with Legacy HumAS-HMMER</h3>
+<p>To validate that FastHumAS achieves high-throughput acceleration
+without sacrificing annotation accuracy—analogous to how
+<em>minimap2</em> (Li, 2018) replaced quadratic alignment via heuristic
+seeding and banded dynamic programming—we performed an exhaustive
+locus-by-locus concordance analysis between FastHumAS and the official
+HumAS-HMMER toolchain (<code>fedorrik/HumAS-HMMER_for_AnVIL</code>)
+across 10 finished nuclear chromosomes of T2T-CHM13 v2.0 (chr1, chr3,
+chr8, chr10, chr11, chr12, chr14, chr17, chr22, chrY), encompassing
+<strong>200,337 legacy loci</strong> evaluated with strict reciprocal
+overlap (<span class="math inline">\(\ge 50\%\)</span> coverage on both
+intervals) and 1:1 bipartite matching: - <strong>Sensitivity
+(Recall):</strong> <strong>99.44%</strong> (199,220 / 200,337 legacy
+monomers detected by FastHumAS), demonstrating that the Stage 1 Master
+Profile peak filter captures virtually all true alpha-satellite repeats.
+- <strong>Precision:</strong> <strong>99.96%</strong> (199,220 / 199,302
+FastHumAS calls validated by legacy), demonstrating an absence of
+spurious false positives without any many-to-one inflation. -
+<strong>Strand Orientation Concordance:</strong>
+<strong>100.00%</strong> agreement (199,220 / 199,220) across all
+matched loci. - <strong>Subfamily / HOR Label Concordance:</strong>
+<strong>99.32%</strong> exact model identity. - <strong>Boundary
+Concordance:</strong> <strong>97.59%</strong> (194,419 monomers) agree
+within <span class="math inline">\(\le 3\)</span> bp, and
+<strong>99.74%</strong> (198,711 monomers) agree within <span
+class="math inline">\(\le 10\)</span> bp. Exact 0-bp boundary identity
+is 41.11% (81,909 monomers), with remaining differences reflecting
+intentional boundary restoration by junction healing.</p>
+<h4 id="detailed-characterization-of-discordant-loci">Detailed
+Characterization of Discordant Loci</h4>
+<p>To evaluate whether the two-stage heuristic incurs any loss of
+biologically relevant repeats, we profiled all discordant records
+between methods: 1. <strong>Legacy-Unique Loci (1,117 records,
+0.56%):</strong> These records have a mean length of only <strong>105.2
+bp</strong> (median 104.0 bp, range 24–204 bp) and low alignment scores
+(mean 87.8; 65.4% scored <span class="math inline">\(&lt;100\)</span>
+and 94.1% scored <span class="math inline">\(&lt;150\)</span>). They
+represent fragmented, partial sub-monomer alignments in degenerate
+pericentromeric boundaries and transposable element insertions near the
+<span class="math inline">\(0.70\)</span> score density threshold,
+rather than canonical 171-bp alpha-satellite units. 2.
+<strong>FastHumAS-Unique Loci (82 records, 0.04%):</strong> These
+records exhibit a mean length of <strong>168.1 bp</strong> (median 169.0
+bp) and robust scores (mean 114.2). They represent full-length canonical
+monomers that were previously discarded by legacy shell scripts due to
+minus-strand coordinate offset collisions. 3. <strong>Gotoh DP
+Recurrence Discordance Analysis:</strong> Comparison of whole-genome
+CHM13 outputs before and after the affine gap recurrence fix confirmed
+that 99.976% of records (488,636 / 488,754) are strictly bit-identical.
+The 125 records formerly classified under gap fix differences had a mean
+length of 169.5 bp (122/125 <span class="math inline">\(\ge 160\)</span>
+bp, mean score 164.2 bits) and reflect full-length competitive monomer
+alignments where the corrected Gotoh gap open/extension penalty shifted
+the optimal alignment path, rather than truncated fragments. The 4
+boundary refinement records exhibited length adjustments between 2 and
+12 bp (two <span class="math inline">\(-2\)</span> bp, one <span
+class="math inline">\(-9\)</span> bp, one <span
+class="math inline">\(-12\)</span> bp).</p>
+<h3 id="junction-healing-and-coordinate-rectification">3.3 Junction
+Healing and Coordinate Rectification</h3>
+<p>In legacy HumAS-HMMER, the 1-bp endpoint offset in
+<code>hmmertblout2bed.awk</code> systematically shifted reverse-strand
+coordinates, creating an artificial 2-bp gap between adjacent
+minus-strand monomers. Across the 10 evaluated chromosomes, legacy
+annotations contained <strong>100,900 micro-gaps (1–3 bp)</strong>, of
+which <strong>68,292 (67.68%)</strong> were exact 2-bp minus-strand gaps
+(extrapolating to ~166,660 assembly-wide across CHM13).</p>
+<p>FastHumAS eliminates this coordinate asymmetry and applies
+consensus-anchored junction healing: - <strong>Flush Contiguous
+Junctions (gap = 0 bp):</strong> Increased from <strong>40.41%</strong>
+(80,955 junctions) in legacy to <strong>93.72%</strong> (186,770
+junctions) in FastHumAS across evaluated chromosomes. -
+<strong>Micro-Gap Reduction:</strong> Inter-monomer 1–3 bp gaps
+decreased by <strong>91.92%</strong> (from 100,900 down to 8,152). -
+<strong>Minus-Strand Bug Elimination:</strong> Artificial 2-bp
+minus-strand gaps decreased by <strong>98.05%</strong> (from 68,292 down
+to 1,335). - <strong>Active Dense HOR Arrays:</strong> In canonical
+active HOR arrays where monomer boundaries strictly follow tandem
+consensus—such as the true active centromeric core of chromosome 22
+(<code>NC_060946.1:12,788,180–15,711,065</code>; <code>hor_22_9</code> /
+<code>S2C14/22H1L</code>, spanning 2.92 Mb with 17,145
+monomers)—end-to-end pipeline continuity achieves <strong>99.59% flush
+abutting junctions</strong> (17,073 flush junctions, compared to 0.00%
+[0 / 17,150] in legacy HumAS-HMMER), with only 65 micro-gaps (0.38%), 5
+gaps &gt; 3 bp (recurrent 31-bp structural variant insertions and
+degenerate boundaries), and 1 overlap (-1 bp) remaining. -
+<strong>Biological Interruption Preservation:</strong> Across the whole
+genome, FastHumAS intentionally accepts boundary extensions only when
+supported by consensus or recurrence criteria (accepting 35.1% of
+candidate gap boundaries in HOR and 55.7% in SF), deliberately
+preserving genuine structural insertions and degenerate array
+transitions.</p>
+<hr />
+<h2 id="discussion">4. Discussion</h2>
+<p>Centromere annotation has long been constrained by the computational
+burden of exhaustive profile searches against multi-gigabase assemblies.
+Because both <code>nhmmer</code> and FastHumAS scale linearly with
+sequence length <span class="math inline">\(O(N \cdot M)\)</span> for
+constant monomer length <span class="math inline">\(M=171\)</span>,
+FastHumAS’s <span class="math inline">\(23.4\times\)</span> to <span
+class="math inline">\(&gt;55\times\)</span> acceleration does not alter
+the asymptotic scaling; rather, it eliminates the massive constant
+factors of exhaustive search—evaluating 1,963 individual profile models
+across 3 billion base pairs—by employing an in-memory “minimap for
+HMMER” architecture: a 1-pass consensus Master Profile seed filter,
+candidate sub-profile evaluation, bounded banded dynamic programming,
+and zero-overhead in-memory streaming with zero intermediate scratch
+disk usage.</p>
+<p>Crucially, this speedup does not compromise annotation accuracy or
+biological fidelity. With <strong>99.44% sensitivity, 99.96% precision,
+and 100.00% strand agreement</strong> against the official HumAS-HMMER
+pipeline across 200,337 loci, FastHumAS serves as a direct, drop-in
+replacement for the T2T CenSat ecosystem. Discordance analysis reveals
+that FastHumAS filters out degraded, fragmented sub-monomers (mean
+length 105 bp) while rescuing bona fide canonical monomers (mean length
+168 bp) formerly lost to coordinate shifting bugs. Furthermore, by
+generating all four standard CenSat BED tracks with canonical 218-color
+palettes and offering a built-in <code>--legacy</code> verification
+mode, FastHumAS guarantees complete portability and backwards
+compatibility for ongoing diploid pangenome and primate comparative
+genomics consortia.</p>
+<hr />
+<h2 id="ai-assisted-research-statement">AI-Assisted Research
+Statement</h2>
+<p>This work was conducted using an autonomous multi-agent AI research
+workflow directed by the human authors: - <strong>Claude Opus
+4.8</strong> and <strong>Claude Fable 5</strong> (Anthropic) operated as
+primary research and engineering agents, designing the pipeline
+architecture, implementing the Rust codebase, and drafting the
+manuscript. - <strong>Gemini 3.8 Flash</strong> (Google DeepMind)
+conducted rapid codebase refactoring, parallel benchmarking
+orchestration on cluster hardware, and synchronization. - <strong>OpenAI
+Astra Pro</strong> (OpenAI) provided independent critical scientific
+review, identifying the Stage 1 recurrence index bug, performance
+inconsistencies, and biological classification nuances. - Human authors
+directed the research goals, formulated the biological domain
+requirements, provisioned and administered cluster compute
+infrastructure, verified epistemic validity, and approved all scientific
+decisions.</p>
+<hr />
+<h2 id="references">References</h2>
+<ol type="1">
+<li>Alexandrov, I.A., <em>et al.</em> (1993). Chromosome-specific alpha
+satellites: two problems of divergence. <em>Chromosoma</em>, 102(5),
+329–340.</li>
+<li>Altemose, N., <em>et al.</em> (2022). Complete genomic and
+epigenetic maps of human centromeres. <em>Science</em>, 376(6588),
+eabl4178.</li>
+<li>Cleveland, D.W., <em>et al.</em> (2003). Centromeres and
+kinetochores: from epigenetics to mitotic checkpoint signaling.
+<em>Cell</em>, 112(4), 407–421.</li>
+<li>Jarvis, E.D., <em>et al.</em> (2022). Semi-automated assembly of
+high-quality diploid human reference genomes. <em>Nature</em>,
+611(7936), 519–531.</li>
+<li>Li, H. (2018). Minimap2: pairwise alignment for nucleotide
+sequences. <em>Bioinformatics</em>, 34(18), 3094–3100.</li>
+<li>Miga, K.H., <em>et al.</em> (2020). Telomere-to-telomere assembly of
+a complete human X chromosome. <em>Nature</em>, 585(7823), 79–84.</li>
+<li>Nurk, S., <em>et al.</em> (2022). The complete sequence of a human
+genome. <em>Science</em>, 376(6588), 44–53.</li>
+<li>Porubsky, D., <em>et al.</em> (2024). Gapped and gapless inversion
+polymorphism in human genomes. <em>Cell</em>, 187(2), 341–357.</li>
+<li>Shepelev, V.A., <em>et al.</em> (2015). Annotation of
+suprachromosomal families reveals uncommon types of alpha satellite
+organization in pericentromeric regions of hg38 human genome assembly.
+<em>Genomics Data</em>, 5, 139–146.</li>
+<li>Uralsky, L.I., <em>et al.</em> (2019). Classification and
+monomer-by-monomer annotation dataset of suprachromosomal family 1 alpha
+satellite higher-order repeats in hg38 human genome assembly. <em>Data
+in Brief</em>, 24, 103708.</li>
+<li>Wheeler, T.J., and Eddy, S.R. (2013). nhmmer: DNA homology search
+with profile HMMs. <em>Bioinformatics</em>, 29(19), 2487–2489.</li>
+<li>Willard, H.F., and Waye, J.S. (1987). Hierarchical order in
+chromosome-specific human alpha satellite DNA. <em>Trends in
+Genetics</em>, 3, 192–198.</li>
+<li>Yoo, D., <em>et al.</em> (2025). Complete sequencing of ape genomes.
+<em>Nature</em>, 641, 401–418.</li>
+</ol>
+</body>
+</html>

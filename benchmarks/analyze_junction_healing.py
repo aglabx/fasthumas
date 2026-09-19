@@ -1,27 +1,29 @@
 #!/usr/bin/env python3
 """
 Empirical analysis of inter-monomer junction gaps:
-Legacy HumAS-HMMER vs FastHumAS across 9 finished chromosomes of T2T-CHM13 v2.0.
+Legacy HumAS-HMMER vs FastHumAS across evaluated chromosomes of T2T-CHM13 v2.0.
 
-Demonstrates:
-1. The origin and extent of the ~200,000 artificial 2-bp minus-strand gaps in legacy HumAS-HMMER
-   caused by 1-bp endpoint offset in hmmertblout2bed.awk.
-2. The combined effect of coordinate correction and heuristic junction healing,
-   reducing micro-gaps by >92% and increasing flush junctions from 32.7% to 93.0%.
-3. The preservation of genuine biological interruptions and divergent boundaries.
+Quantifies:
+1. The origin and extent of artificial 2-bp minus-strand gaps in legacy HumAS-HMMER
+   caused by the 1-bp endpoint offset in hmmertblout2bed.awk ($7 - 1, $8).
+2. The empirical increase in flush contiguous junctions (gap = 0 bp) and reduction
+   of 1-3 bp micro-gaps.
+3. Dynamically computes all counts, proportions, and assembly-wide extrapolations
+   without hardcoded constants.
 """
 
 import os
+import sys
 import glob
 from collections import defaultdict
 
 def analyze_gaps(recs):
-    recs = sorted([(r[0], int(r[1]), int(r[2]), r[3], r[5]) for r in recs if len(r)>=6], key=lambda x: (x[0], x[1]))
+    recs = sorted([(r[0], int(r[1]), int(r[2]), r[3], r[5]) for r in recs if len(r) >= 6], key=lambda x: (x[0], x[1], x[2]))
     gaps_0 = 0
     gaps_1_3 = 0
     gaps_2bp_minus = 0
     gaps_gt3 = 0
-    for i in range(len(recs)-1):
+    for i in range(len(recs) - 1):
         if recs[i][0] == recs[i+1][0]:
             gap = recs[i+1][1] - recs[i][2]
             if gap == 0:
@@ -46,13 +48,13 @@ def load_bed(path):
     return records
 
 def main():
-    import sys
     if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} <fasthumas_bed> <legacy_dir>")
+        print(f"Usage: {sys.argv[0]} <fasthumas_bed> <legacy_dir> [target_chroms_comma_separated]")
         sys.exit(1)
 
     fasthumas_bed = sys.argv[1]
     legacy_dir = sys.argv[2]
+    target_chroms = set(sys.argv[3].split(",")) if len(sys.argv) > 3 else None
 
     f_all = load_bed(fasthumas_bed)
     f_by_chr = defaultdict(list)
@@ -60,11 +62,17 @@ def main():
         f_by_chr[r[0]].append(r)
 
     legacy_files = sorted(glob.glob(os.path.join(legacy_dir, "AS-HOR+SF-vs-*.bed")))
+    if target_chroms:
+        legacy_files = [p for p in legacy_files if any(c in os.path.basename(p) for c in target_chroms)]
+
+    if not legacy_files:
+        print("No matching legacy files found!")
+        sys.exit(1)
 
     print("==========================================================================================================")
     print("Inter-Monomer Gap and Healing Analysis: Legacy HumAS-HMMER vs FastHumAS")
     print("==========================================================================================================")
-    print(f"{'Chromosome':<12} | {'Legacy Records':<14} | {'Legacy Gap=0':<12} | {'Legacy 1-3bp':<12} | {'Legacy 2bp(-) ':<14} | {'FastHumAS Gap=0':<15} | {'FastHumAS 1-3bp':<15}")
+    print(f"{'Chromosome':<12} | {'Legacy Recs':<12} | {'Legacy Gap=0':<12} | {'Legacy 1-3bp':<12} | {'Legacy 2bp(-)':<13} | {'Fast Gap=0':<12} | {'Fast 1-3bp':<12} | {'Fast 2bp(-)':<12}")
     print("-" * 106)
 
     tot_l_n = tot_l_0 = tot_l_13 = tot_l_2m = 0
@@ -75,8 +83,8 @@ def main():
         l_recs = load_bed(l_path)
         f_recs = f_by_chr[chrom]
 
-        ln, l0, l13, l2m, lgt = analyze_gaps(l_recs)
-        fn, f0, f13, f2m, fgt = analyze_gaps(f_recs)
+        ln, l0, l13, l2m, _ = analyze_gaps(l_recs)
+        fn, f0, f13, f2m, _ = analyze_gaps(f_recs)
 
         tot_l_n += ln
         tot_l_0 += l0
@@ -88,20 +96,31 @@ def main():
         tot_f_13 += f13
         tot_f_2m += f2m
 
-        print(f"{chrom:<12} | {ln:<14} | {l0:<12} | {l13:<12} | {l2m:<14} | {f0:<15} | {f13:<15}")
+        print(f"{chrom:<12} | {ln:<12} | {l0:<12} | {l13:<12} | {l2m:<13} | {f0:<12} | {f13:<12} | {f2m:<12}")
 
+    n_chr = len(legacy_files)
     print("=" * 106)
-    print(f"{'TOTAL (9 chr)':<12} | {tot_l_n:<14} | {tot_l_0:<12} | {tot_l_13:<12} | {tot_l_2m:<14} | {tot_f_0:<15} | {tot_f_13:<15}")
+    print(f"{f'TOTAL ({n_chr} chr)':<12} | {tot_l_n:<12} | {tot_l_0:<12} | {tot_l_13:<12} | {tot_l_2m:<13} | {tot_f_0:<12} | {tot_f_13:<12} | {tot_f_2m:<12}")
 
-    print("\nSummary Findings:")
-    print(f"1. Legacy HumAS-HMMER contains {tot_l_13} micro-gaps (1-3 bp) across these 9 chromosomes (56.9% of monomers).")
-    print(f"2. Of these, {tot_l_2m} (68.5%) are exact 2-bp gaps on the minus strand, directly attributable to the 1-bp coordinate shift in hmmertblout2bed.awk.")
-    print(f"   Extrapolated to the full genome (488,754 records), this accounts for ~{tot_l_2m * (488754 / tot_l_n):,.0f} artificial gaps.")
-    print(f"3. FastHumAS eliminates coordinate errors and applies consensus-anchored junction healing:")
-    print(f"   - Flush contiguous junctions (gap = 0 bp) increase from {tot_l_0} (32.7%) to {tot_f_0} (93.0%).")
-    print(f"   - 1-3 bp micro-gaps decrease by {(tot_l_13 - tot_f_13) / tot_l_13 * 100:.1f}% (from {tot_l_13} down to {tot_f_13}).")
-    print(f"   - Artificial 2-bp minus-strand gaps decrease by {(tot_l_2m - tot_f_2m) / tot_l_2m * 100:.1f}% (from {tot_l_2m} to {tot_f_2m}).")
-    print(f"4. Remaining gaps (7,911 micro-gaps, plus genuine >3 bp interruptions) represent authentic biological variation, retrotransposon insertions, and degenerate array boundaries which FastHumAS deliberately preserves.")
+    l_0_pct = (tot_l_0 / (tot_l_n - n_chr) * 100.0) if tot_l_n > n_chr else 0.0
+    f_0_pct = (tot_f_0 / (tot_f_n - n_chr) * 100.0) if tot_f_n > n_chr else 0.0
+    l_13_pct = (tot_l_13 / tot_l_n * 100.0) if tot_l_n > 0 else 0.0
+    l_2m_pct = (tot_l_2m / tot_l_13 * 100.0) if tot_l_13 > 0 else 0.0
+    reduc_13 = ((tot_l_13 - tot_f_13) / tot_l_13 * 100.0) if tot_l_13 > 0 else 0.0
+    reduc_2m = ((tot_l_2m - tot_f_2m) / tot_l_2m * 100.0) if tot_l_2m > 0 else 0.0
+
+    print("\nSummary Findings (Dynamically Computed):")
+    print(f"1. Legacy HumAS-HMMER contains {tot_l_13} micro-gaps (1-3 bp) across these {n_chr} chromosomes ({l_13_pct:.2f}% of monomers).")
+    print(f"2. Of these micro-gaps, {tot_l_2m} ({l_2m_pct:.2f}%) are exact 2-bp gaps between adjacent minus-strand monomers, caused by hmmertblout2bed.awk coordinates.")
+    chm13_total = len(f_all)
+    if tot_l_n > 0 and chm13_total > 0:
+        extrapolated = int(tot_l_2m * (chm13_total / tot_l_n))
+        print(f"   Assembly-wide extrapolation: {tot_l_2m} * ({chm13_total} / {tot_l_n}) = ~{extrapolated:,} artificial minus-strand gaps genome-wide.")
+    print(f"3. FastHumAS coordinate rectification and junction healing:")
+    print(f"   - Flush contiguous junctions (gap = 0 bp) increase from {tot_l_0} ({l_0_pct:.2f}%) in legacy to {tot_f_0} ({f_0_pct:.2f}%) in FastHumAS.")
+    print(f"   - 1-3 bp micro-gaps decrease by {reduc_13:.2f}% (from {tot_l_13} down to {tot_f_13}).")
+    print(f"   - Artificial 2-bp minus-strand gaps decrease by {reduc_2m:.2f}% (from {tot_l_2m} down to {tot_f_2m}).")
+    print(f"4. Remaining gaps ({tot_f_13} micro-gaps, plus genuine >3 bp interruptions) represent authentic biological variation, retrotransposon insertions, and degenerate array boundaries which FastHumAS deliberately preserves.")
 
 if __name__ == "__main__":
     main()

@@ -5,8 +5,8 @@ Scoring model calibration analysis: FastHumAS Gotoh PSSM log-odds vs HMMER bit s
 Demonstrates that for 171-bp alpha-satellite monomer profiles, the empirical scaling factor
 of 0.85 linearly maps pure Gotoh match log-odds sums to HMMER's Null2/transition-penalized
 bit scores with high precision:
-- Training split (chr1, chr3, chr8; n = 23,527): Mean 0.8495 +/- 0.0074 (SD), Median 0.8504
-- Independent test split (chr10, 11, 12, 14, 22, Y; n = 34,656): Mean 0.8483 +/- 0.0085 (SD), Median 0.8500
+- Training split (chr1, chr3, chr8; n = 23,506): Mean 0.8495 +/- 0.0074 (SD), Median 0.8504
+- Independent test split (chr10, 11, 12, 14, 17, 22, Y; n = 58,155): Mean 0.8505 +/- 0.0078 (SD), Median 0.8501
 """
 
 import sys

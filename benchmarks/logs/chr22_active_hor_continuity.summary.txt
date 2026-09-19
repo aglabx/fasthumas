@@ -1,0 +1,43 @@
+==========================================================================================================
+Active Centromeric HOR Array Analysis: chr22 (NC_060946.1:12,788,180–15,711,065, 2.92 Mb)
+CenSat Domain: hor_22_9 (S2C14/22H1L)
+==========================================================================================================
+Metric                                  | FastHumAS                 | Legacy HumAS-HMMER
+----------------------------------------------------------------------------------------------------------
+Total Annotated Monomers                | 17145                     | 17150                    
+Total Inter-Monomer Junctions           | 17144                     | 17149                    
+Flush Contiguous Junctions (gap = 0 bp) | 17073 ( 99.59%)       | 0 (  0.00%)
+Micro-gaps (1–3 bp)                     | 65 (  0.38%)       | 16525 ( 96.36%)
+  - 1-bp gaps                           | 54                        | 0                        
+  - 2-bp gaps                           | 8                         | 13773                    
+  - 3-bp gaps                           | 3                         | 2752                     
+Gaps > 3 bp                             | 5                         | 624                      
+Overlaps (< 0 bp)                       | 1                         | 0                        
+==========================================================================================================
+
+Detailed Investigation of Gaps > 3 bp in FastHumAS:
+  * Locus: [12789031, 12789250) (length = 219 bp)
+    Flanking monomers: S2C14/22H1L.3 [12788860,12789031) -> S2C14/22H1L.2 [12789250,12789421)
+    Biological / Algorithmic nature: Region of degenerate pericentromeric boundary sequence;
+    legacy nhmmer fragmented this into low-scoring partial hits (<100 bits: S2C9H1L.7 and S2C14/22H1L.3).
+  * Locus: [15478940, 15478971) (length = 31 bp)
+    Flanking monomers: S2C14/22H1L.7 [15478769,15478940) -> S2C14/22H1L.6 [15478971,15479148)
+    Biological nature: Recurrent 31-bp structural variant insertion between S2C14/22H1L.7 and S2C14/22H1L.6.
+    Legacy nhmmer split monomer .6 into two sub-monomer fragments (58 bp, score 46.4 and 145 bp, score 161.8).
+    FastHumAS Gotoh affine DP calls the full canonical monomer (177 bp), cleanly preserving the 31-bp insertion.
+  * Locus: [15480341, 15480372) (length = 31 bp)
+    Flanking monomers: S2C14/22H1L.7 [15480170,15480341) -> S2C14/22H1L.6 [15480372,15480549)
+    Biological nature: Recurrent 31-bp structural variant insertion between S2C14/22H1L.7 and S2C14/22H1L.6.
+    Legacy nhmmer split monomer .6 into two sub-monomer fragments (58 bp, score 46.4 and 145 bp, score 161.8).
+    FastHumAS Gotoh affine DP calls the full canonical monomer (177 bp), cleanly preserving the 31-bp insertion.
+  * Locus: [15488562, 15488593) (length = 31 bp)
+    Flanking monomers: S2C14/22H1L.7 [15488391,15488562) -> S2C14/22H1L.6 [15488593,15488770)
+    Biological nature: Recurrent 31-bp structural variant insertion between S2C14/22H1L.7 and S2C14/22H1L.6.
+    Legacy nhmmer split monomer .6 into two sub-monomer fragments (58 bp, score 46.4 and 145 bp, score 161.8).
+    FastHumAS Gotoh affine DP calls the full canonical monomer (177 bp), cleanly preserving the 31-bp insertion.
+  * Locus: [15709700, 15709706) (length = 6 bp)
+    Flanking monomers: S2C14/22H1L.4 [15709529,15709700) -> S2C14/22H1L.3 [15709706,15709873)
+    Biological nature: Genuine 6-bp assembly micro-gap confirmed in both legacy (8 bp) and FastHumAS (6 bp).
+
+Detailed Investigation of Overlaps (< 0 bp):
+  * Overlap: -1 bp between S2C14/22H1L.2 [12789250,12789421) and S2C20H5d.6 [12789420,12789591)

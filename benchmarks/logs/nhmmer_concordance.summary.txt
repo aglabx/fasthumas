@@ -16,7 +16,10 @@ NC_060948.1    | 2554       | 2589     | 2549     |  98.46% |  99.80% |  96.59% 
 ================================================================================
 TOTAL / MEAN   | 199302     | 200337   | 199220   |  99.44% |  99.96% |  97.59% (194419) |  99.32% | 100.00%
 
-Exact Boundary (=0 bp): 81909 (41.11%)
-Boundary within <=10 bp: 198711 (99.74%)
-FastHumAS unique (not in legacy): 82 (0.04%)
-Legacy unique (not in FastHumAS): 1117 (0.56%)
+Exact Boundary (=0 bp): 81909 / 199220 (41.11%)
+Boundary within <=3 bp: 194419 / 199220 (97.59%)
+Boundary within <=10 bp: 198711 / 199220 (99.74%)
+Strand Orientation Concordance: 199220 / 199220 (100.00%)
+Subfamily / Label Concordance: 197874 / 199220 (99.32%)
+FastHumAS unique (not in legacy): 82 / 199302 (0.04%)
+Legacy unique (not in FastHumAS): 1117 / 200337 (0.56%)

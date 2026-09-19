@@ -149,6 +149,10 @@ def main():
         print(f"No legacy BED files found in {legacy_dir}!")
         sys.exit(1)
 
+    target_chroms = set(sys.argv[3].split(",")) if len(sys.argv) > 3 else None
+    if target_chroms:
+        legacy_files = [p for p in legacy_files if any(c in os.path.basename(p) for c in target_chroms)]
+
     print(f"Found {len(legacy_files)} finished legacy chromosome files in {legacy_dir}")
     print("=" * 80)
     print(f"{'Chrom':<14} | {'FastHumAS':<10} | {'Legacy':<8} | {'Overlap':<8} | {'Sens %':<7} | {'Prec %':<7} | {'<=3bp Bdry':<11} | {'Label Agr':<10} | {'Strand Agr':<10}")
@@ -201,10 +205,13 @@ def main():
     total_strand_pct = (total_strand / total_ov * 100.0) if total_ov > 0 else 0.0
 
     print(f"{'TOTAL / MEAN':<14} | {total_f:<10} | {total_l:<8} | {total_ov:<8} | {total_sens:6.2f}% | {total_prec:6.2f}% | {total_bdry3:6.2f}% ({total_3bp}) | {total_label_pct:6.2f}% | {total_strand_pct:6.2f}%")
-    print(f"\nExact Boundary (=0 bp): {total_exact} ({total_exact/total_ov*100:.2f}%)")
-    print(f"Boundary within <=10 bp: {total_10bp} ({total_10bp/total_ov*100:.2f}%)")
-    print(f"FastHumAS unique (not in legacy): {total_f_uniq} ({total_f_uniq/total_f*100:.2f}%)")
-    print(f"Legacy unique (not in FastHumAS): {total_l_uniq} ({total_l_uniq/total_l*100:.2f}%)")
+    print(f"\nExact Boundary (=0 bp): {total_exact} / {total_ov} ({total_exact/total_ov*100:.2f}%)")
+    print(f"Boundary within <=3 bp: {total_3bp} / {total_ov} ({total_bdry3:.2f}%)")
+    print(f"Boundary within <=10 bp: {total_10bp} / {total_ov} ({total_10bp/total_ov*100:.2f}%)")
+    print(f"Strand Orientation Concordance: {total_strand} / {total_ov} ({total_strand_pct:.2f}%)")
+    print(f"Subfamily / Label Concordance: {total_label} / {total_ov} ({total_label_pct:.2f}%)")
+    print(f"FastHumAS unique (not in legacy): {total_f_uniq} / {total_f} ({total_f_uniq/total_f*100:.2f}%)")
+    print(f"Legacy unique (not in FastHumAS): {total_l_uniq} / {total_l} ({total_l_uniq/total_l*100:.2f}%)")
 
 if __name__ == "__main__":
     main()

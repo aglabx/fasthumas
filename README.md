@@ -149,6 +149,23 @@ Tested against the legacy bash pipeline on 34 CDR regions of a human haplotype a
 
 ---
 
+## Manuscript and Peer Review Reproducibility
+
+The complete manuscript, detailed mathematical / biological technical documentation, response to reviewers, and standalone reproduction scripts are included in this repository:
+
+- **Manuscript Draft:** [paper/paper.md](paper/paper.md) (HTML version: [paper/paper.html](paper/paper.html))
+- **Technical & Biological In-Depth Notes:** [paper/EXPL.md](paper/EXPL.md)
+- **Response to Reviewers:** [paper/response_to_reviewers.md](paper/response_to_reviewers.md)
+
+### Reproducibility Benchmark Suite (`benchmarks/`)
+- [`benchmarks/compare_fasthumas_vs_nhmmer.py`](benchmarks/compare_fasthumas_vs_nhmmer.py): Evaluates locus-by-locus concordance (sensitivity, precision, strand, label agreement) between FastHumAS and the legacy `nhmmer` pipeline.
+- [`benchmarks/analyze_junction_healing.py`](benchmarks/analyze_junction_healing.py): Analyzes inter-monomer junction gaps, quantifying flush closure, micro-gap reduction, and elimination of the legacy 2-bp minus-strand coordinate offset.
+- [`benchmarks/analyze_active_hor_chr22.py`](benchmarks/analyze_active_hor_chr22.py): Quantifies pipeline continuity across canonical dense active HOR arrays (`NC_060946.1:12,788,180–15,711,065`, 17,145 monomers) achieving 99.59% flush junctions.
+- [`benchmarks/calibrate_scoring.py`](benchmarks/calibrate_scoring.py): Empirically calibrates bitscore-per-length thresholds between bounded dynamic programming and full HMMER Forward/Backward algorithm.
+- [`benchmarks/run_fasthumas_suite.sh`](benchmarks/run_fasthumas_suite.sh): Automated cluster benchmark driver executing multi-core end-to-end runs.
+
+---
+
 ## Development
 
 ```bash

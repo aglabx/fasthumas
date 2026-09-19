@@ -2,5 +2,3 @@
 **/*.rs.bk
 *.bed
 .DS_Store
-paper/
-*.html

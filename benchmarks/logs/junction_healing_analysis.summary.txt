@@ -1,26 +1,27 @@
 ==========================================================================================================
 Inter-Monomer Gap and Healing Analysis: Legacy HumAS-HMMER vs FastHumAS
 ==========================================================================================================
-Chromosome   | Legacy Records | Legacy Gap=0 | Legacy 1-3bp | Legacy 2bp(-)  | FastHumAS Gap=0 | FastHumAS 1-3bp
+Chromosome   | Legacy Recs  | Legacy Gap=0 | Legacy 1-3bp | Legacy 2bp(-) | Fast Gap=0   | Fast 1-3bp   | Fast 2bp(-) 
 ----------------------------------------------------------------------------------------------------------
-NC_060925.1  | 30571          | 10543        | 17119        | 9550           | 30039           | 232            
-NC_060927.1  | 15589          | 1252         | 12805        | 11056          | 14862           | 404            
-NC_060932.1  | 15804          | 12518        | 2182         | 223            | 14713           | 506            
-NC_060934.1  | 16915          | 10753        | 3925         | 260            | 14374           | 1152           
-NC_060935.1  | 26385          | 18912        | 4168         | 609            | 22505           | 2975           
-NC_060936.1  | 20107          | 599          | 16887        | 14080          | 18152           | 1279           
-NC_060938.1  | 22434          | 1857         | 18476        | 14009          | 21170           | 684            
-NC_060946.1  | 24531          | 694          | 21952        | 17501          | 23703           | 484            
-NC_060948.1  | 2589           | 92           | 2047         | 923            | 2194            | 195            
+NC_060925.1  | 30571        | 10543        | 17119        | 9550          | 30039        | 232          | 38          
+NC_060927.1  | 15589        | 1252         | 12805        | 11056         | 14865        | 404          | 48          
+NC_060932.1  | 15804        | 12518        | 2182         | 223           | 14713        | 506          | 11          
+NC_060934.1  | 16915        | 10753        | 3925         | 260           | 14378        | 1153         | 149         
+NC_060935.1  | 26385        | 18912        | 4168         | 609           | 22507        | 2975         | 617         
+NC_060936.1  | 20107        | 599          | 16887        | 14080         | 18156        | 1282         | 286         
+NC_060938.1  | 22434        | 1857         | 18476        | 14009         | 21205        | 691          | 57          
+NC_060941.1  | 25412        | 23735        | 1339         | 81            | 24994        | 225          | 6           
+NC_060946.1  | 24531        | 694          | 21952        | 17501         | 23717        | 487          | 53          
+NC_060948.1  | 2589         | 92           | 2047         | 923           | 2196         | 197          | 70          
 ==========================================================================================================
-TOTAL (9 chr) | 174925         | 57220        | 99561        | 68211          | 161712          | 7911           
+TOTAL (10 chr) | 200337       | 80955        | 100900       | 68292         | 186770       | 8152         | 1335        
 
-Summary Findings:
-1. Legacy HumAS-HMMER contains 99561 micro-gaps (1-3 bp) across these 9 chromosomes (56.9% of monomers).
-2. Of these, 68211 (68.5%) are exact 2-bp gaps on the minus strand, directly attributable to the 1-bp coordinate shift in hmmertblout2bed.awk.
-   Extrapolated to the full genome (488,754 records), this accounts for ~190,587 artificial gaps.
-3. FastHumAS eliminates coordinate errors and applies consensus-anchored junction healing:
-   - Flush contiguous junctions (gap = 0 bp) increase from 57220 (32.7%) to 161712 (93.0%).
-   - 1-3 bp micro-gaps decrease by 92.1% (from 99561 down to 7911).
-   - Artificial 2-bp minus-strand gaps decrease by 98.1% (from 68211 to 1329).
-4. Remaining gaps (7,911 micro-gaps, plus genuine >3 bp interruptions) represent authentic biological variation, retrotransposon insertions, and degenerate array boundaries which FastHumAS deliberately preserves.
+Summary Findings (Dynamically Computed):
+1. Legacy HumAS-HMMER contains 100900 micro-gaps (1-3 bp) across these 10 chromosomes (50.37% of monomers).
+2. Of these micro-gaps, 68292 (67.68%) are exact 2-bp gaps between adjacent minus-strand monomers, caused by hmmertblout2bed.awk coordinates.
+   Assembly-wide extrapolation: 68292 * (488904 / 200337) = ~166,660 artificial minus-strand gaps genome-wide.
+3. FastHumAS coordinate rectification and junction healing:
+   - Flush contiguous junctions (gap = 0 bp) increase from 80955 (40.41%) in legacy to 186770 (93.72%) in FastHumAS.
+   - 1-3 bp micro-gaps decrease by 91.92% (from 100900 down to 8152).
+   - Artificial 2-bp minus-strand gaps decrease by 98.05% (from 68292 down to 1335).
+4. Remaining gaps (8152 micro-gaps, plus genuine >3 bp interruptions) represent authentic biological variation, retrotransposon insertions, and degenerate array boundaries which FastHumAS deliberately preserves.

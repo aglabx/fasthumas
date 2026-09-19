@@ -39,8 +39,13 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
                 if has_reciprocal_overlap(rec_i, cand, 0.1) {
                     let is_better = cand.score > best.score
                         || ((cand.score - best.score).abs() < 1e-6
-                            && (cand.start > best.start
-                                || (cand.start == best.start && cand.end > best.end)));
+                            && (cand.start < best.start
+                                || (cand.start == best.start
+                                    && (cand.end < best.end
+                                        || (cand.end == best.end
+                                            && (cand.name < best.name
+                                                || (cand.name == best.name
+                                                    && cand.strand < best.strand)))))));
                     if is_better {
                         best = cand;
                     }
@@ -133,10 +138,17 @@ pub fn near_dedup(records: &[BedRecord]) -> Vec<BedRecord> {
 }
 
 /// Run all 3 filtering stages in sequence.
+/// Guarantees that the returned records are strictly sorted by (chrom, start, end, name, strand)
+/// so that subsequent junction healing (which assumes adjacent records in coordinate order)
+/// correctly evaluates all true adjacent monomer junctions.
 pub fn filter_overlaps(records: &[BedRecord]) -> Vec<BedRecord> {
     let stage1 = bedmap_max_element(records);
     let stage2 = exact_dedup(&stage1);
-    near_dedup(&stage2)
+    let mut stage2_sorted = stage2;
+    crate::bed::sort_bed_records(&mut stage2_sorted);
+    let mut stage3 = near_dedup(&stage2_sorted);
+    crate::bed::sort_bed_records(&mut stage3);
+    stage3
 }
 
 #[cfg(test)]
@@ -239,5 +251,48 @@ mod tests {
         let result = near_dedup(&recs);
         assert_eq!(result.len(), 2);
         assert_eq!(result[1].chrom, "chr2");
+    }
+
+    #[test]
+    fn test_bedmap_tie_break_name() {
+        // Reviewer counterexample:
+        // chr1  0  171  B  200.0  +
+        // chr1  0  171  A  200.0  +
+        // BEDOPS sort-bed + bedmap preserves A.
+        let mut recs = vec![
+            make_rec("chr1", 0, 171, "B", 200.0),
+            make_rec("chr1", 0, 171, "A", 200.0),
+        ];
+        crate::bed::sort_bed_records(&mut recs);
+        let filtered = filter_overlaps(&recs);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].name, "A");
+    }
+
+    #[test]
+    fn test_filter_overlaps_restores_order_for_healing() {
+        // Reviewer counterexample:
+        // A: [0, 176), 150
+        // B: [5, 93), 100
+        // C: [158, 329), 200
+        // D: [330, 501), 190
+        // Stage 1 output might be unordered (C, A, D), but filter_overlaps
+        // must restore coordinate order (A, C, D) so that the 1-bp junction
+        // between C [158,329) and D [330,501) is preserved for healing.
+        let mut recs = vec![
+            make_rec("chr1", 0, 176, "A", 150.0),
+            make_rec("chr1", 5, 93, "B", 100.0),
+            make_rec("chr1", 158, 329, "C", 200.0),
+            make_rec("chr1", 330, 501, "D", 190.0),
+        ];
+        crate::bed::sort_bed_records(&mut recs);
+        let filtered = filter_overlaps(&recs);
+        assert_eq!(filtered.len(), 3);
+        assert_eq!(filtered[0].name, "A");
+        assert_eq!(filtered[0].start, 0);
+        assert_eq!(filtered[1].name, "C");
+        assert_eq!(filtered[1].start, 158);
+        assert_eq!(filtered[2].name, "D");
+        assert_eq!(filtered[2].start, 330);
     }
 }
