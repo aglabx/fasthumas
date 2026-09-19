@@ -39,9 +39,9 @@ pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
                 if has_reciprocal_overlap(rec_i, cand, 0.1) {
                     let is_better = cand.score > best.score
                         || ((cand.score - best.score).abs() < 1e-6
-                            && (cand.start < best.start
+                            && (cand.start > best.start
                                 || (cand.start == best.start
-                                    && (cand.end < best.end
+                                    && (cand.end > best.end
                                         || (cand.end == best.end
                                             && (cand.name < best.name
                                                 || (cand.name == best.name
@@ -137,18 +137,20 @@ pub fn near_dedup(records: &[BedRecord]) -> Vec<BedRecord> {
     result
 }
 
-/// Run all 3 filtering stages in sequence.
-/// Guarantees that the returned records are strictly sorted by (chrom, start, end, name, strand)
+/// Run all 3 filtering stages in sequence matching legacy HumAS-HMMER:
+/// Stage 1: bedmap --max-element --fraction-either 0.1
+/// Stage 2: exact_dedup (awk '{if(!($0 in a)){a[$0]; print}}')
+/// Stage 3: near_dedup (overlap_filter.py)
+/// Finally, guarantees that the returned records are strictly sorted by (chrom, start, end, name, strand)
 /// so that subsequent junction healing (which assumes adjacent records in coordinate order)
-/// correctly evaluates all true adjacent monomer junctions.
+/// correctly evaluates all true adjacent monomer junctions without altering filtering membership.
 pub fn filter_overlaps(records: &[BedRecord]) -> Vec<BedRecord> {
     let stage1 = bedmap_max_element(records);
     let stage2 = exact_dedup(&stage1);
-    let mut stage2_sorted = stage2;
-    crate::bed::sort_bed_records(&mut stage2_sorted);
-    let mut stage3 = near_dedup(&stage2_sorted);
-    crate::bed::sort_bed_records(&mut stage3);
-    stage3
+    let stage3 = near_dedup(&stage2);
+    let mut stage3_sorted = stage3;
+    crate::bed::sort_bed_records(&mut stage3_sorted);
+    stage3_sorted
 }
 
 #[cfg(test)]
@@ -294,5 +296,57 @@ mod tests {
         assert_eq!(filtered[1].start, 158);
         assert_eq!(filtered[2].name, "D");
         assert_eq!(filtered[2].start, 330);
+    }
+
+    #[test]
+    fn test_bedmap_tie_break_greater_start_and_end() {
+        // Reviewer counterexample:
+        // A [0, 171) vs B [10, 181), both score 200 -> BEDOPS preserves B.
+        let mut recs1 = vec![
+            make_rec("chr1", 0, 171, "A", 200.0),
+            make_rec("chr1", 10, 181, "B", 200.0),
+        ];
+        crate::bed::sort_bed_records(&mut recs1);
+        let filtered1 = filter_overlaps(&recs1);
+        assert_eq!(filtered1.len(), 1);
+        assert_eq!(filtered1[0].name, "B");
+        assert_eq!(filtered1[0].start, 10);
+
+        // A [0, 171) vs B [0, 181), both score 200 -> BEDOPS preserves B.
+        let mut recs2 = vec![
+            make_rec("chr1", 0, 171, "A", 200.0),
+            make_rec("chr1", 0, 181, "B", 200.0),
+        ];
+        crate::bed::sort_bed_records(&mut recs2);
+        let filtered2 = filter_overlaps(&recs2);
+        assert_eq!(filtered2.len(), 1);
+        assert_eq!(filtered2[0].name, "B");
+        assert_eq!(filtered2[0].end, 181);
+    }
+
+    #[test]
+    fn test_filter_overlaps_legacy_near_dedup_compatibility() {
+        // Reviewer counterexample (without equal scores):
+        // chr1  0    145  A  124  +
+        // chr1  34   122  B  167  +
+        // chr1  117  291  C  199  +
+        // chr1  184  290  D  206  +
+        // In legacy bedmap + exact_dedup + overlap_filter.py, all 3 records B, C, D are preserved.
+        // If exact_dedup is prematurely sorted before near_dedup, C is falsely compared to D and dropped.
+        let mut recs = vec![
+            make_rec("chr1", 0, 145, "A", 124.0),
+            make_rec("chr1", 34, 122, "B", 167.0),
+            make_rec("chr1", 117, 291, "C", 199.0),
+            make_rec("chr1", 184, 290, "D", 206.0),
+        ];
+        crate::bed::sort_bed_records(&mut recs);
+        let filtered = filter_overlaps(&recs);
+        assert_eq!(filtered.len(), 3);
+        assert_eq!(filtered[0].name, "B");
+        assert_eq!(filtered[0].start, 34);
+        assert_eq!(filtered[1].name, "C");
+        assert_eq!(filtered[1].start, 117);
+        assert_eq!(filtered[2].name, "D");
+        assert_eq!(filtered[2].start, 184);
     }
 }

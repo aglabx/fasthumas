@@ -64,8 +64,8 @@ external toolchains (<code>nhmmer</code>, <code>awk</code>,
 <code>sort</code>, <code>bedmap</code>, <code>python</code>) that incur
 severe I/O bottlenecks (&gt;140 GB intermediate disk files per genome),
 suffer from an off-by-one minus-strand coordinate shift inducing
-~190,000–200,000 artificial 2-bp gaps across the genome, and leave 1–3
-bp inter-monomer boundary gaps due to local alignment trimming. Here, we
+~166,660 artificial 2-bp gaps across the genome, and leave 1–3 bp
+inter-monomer boundary gaps due to local alignment trimming. Here, we
 present <strong>FastHumAS</strong>, a high-performance, pure-Rust
 annotation engine for alpha-satellite repeat classification in complete
 genomes. FastHumAS couples an in-memory two-stage scanning
@@ -73,15 +73,15 @@ architecture—combining a 171-bp consensus Master Profile filter with
 bounded dynamic programming against 1,963 monomer-level HOR models and
 39 SF models—with consensus-anchored junction healing and simultaneous
 multi-track BED generation. Across complete reference assemblies,
-FastHumAS annotates the 3.12-Gb T2T-CHM13 genome in <strong>38m
-55s</strong> on 96 threads (peak RSS 31.80 GB, 0 GB disk churn),
-achieving a <strong>23.4× wall-clock speedup</strong> over the parallel
-multi-chromosome legacy baseline (15.2 hours) and
-<strong>&gt;55×</strong> over sequential execution. Direct
-whole-chromosome benchmarking against legacy <code>nhmmer</code>
-demonstrates <strong>99.37% sensitivity, 99.96% precision, 100.00%
-strand concordance, and 99.28% label agreement</strong>, while
-increasing flush inter-monomer junctions from 32.7% to 93.0% without
+FastHumAS annotates the 3.12-Gb T2T-CHM13 genome in a measured
+<strong>38m 55s</strong> on 96 threads (peak RSS 31.80 GB, 0 GB disk
+churn), achieving an estimated <strong>23.4× wall-clock speedup</strong>
+over the parallel multi-chromosome legacy baseline (~15.2 hours) and
+<strong>&gt;55×</strong> over sequential execution (~36–52 hours).
+Direct whole-chromosome benchmarking against legacy <code>nhmmer</code>
+demonstrates <strong>99.44% sensitivity, 99.96% precision, 100.00%
+strand concordance, and 99.32% label agreement</strong>, while
+increasing flush inter-monomer junctions from 40.41% to 93.72% without
 altering authentic biological insertions.<br />
 <strong>Availability and Implementation:</strong> FastHumAS is
 implemented in pure Rust and freely available under the MIT license at
@@ -198,49 +198,58 @@ maxima clearing <span class="math inline">\(S \ge 35.0\)</span>.</p>
 id="stage-2-bounded-dynamic-programming-candidate-filtering-and-calibration">Stage
 2: Bounded Dynamic Programming, Candidate Filtering, and
 Calibration</h4>
-<p>For each candidate peak, a target sequence slice (<span
-class="math inline">\(\sim 200\)</span> bp) is evaluated against the
-individual Profile HMM models using a semi-global alignment anchored to
-the profile boundaries with an asymmetric band: <span
-class="math display">\[j \in [\text{expected} - 14, \text{expected} +
-28]\]</span> This asymmetric band accommodates monomer deletions down to
-<span class="math inline">\(\sim 157\)</span> bp and insertions up to
-<span class="math inline">\(\sim 199\)</span> bp. The forward dynamic
-programming path terminates once the sequence position reaches <span
-class="math inline">\(k \ge L - 5\)</span> (where <span
-class="math inline">\(L \approx 171\)</span> bp is canonical monomer
-length), capturing contractions while enforcing profile boundaries.</p>
+<p>For each candidate peak identified in Stage 1, a target sequence
+slice within an evaluation window <span class="math inline">\([end\_pos
+- 190, end\_pos + 5)\)</span> is aligned against individual Profile HMM
+models using semi-global alignment with an asymmetric dynamic
+programming band: <span class="math display">\[j \in [\text{expected} -
+14, \text{expected} + 28]\]</span> relative to the main diagonal. During
+matrix evaluation, candidate alignment endpoint scores <span
+class="math inline">\(\max(H[i, k], E[i, k], F[i, k])\)</span> are
+considered for terminal model positions <span class="math inline">\(k
+\ge L - 5\)</span> (where <span class="math inline">\(L\)</span> is the
+model length, allowing up to 5-bp model contractions), while the
+recurrence continues across the full sequence evaluation window.</p>
 <p>To bridge Gotoh PSSM match log-odds sums to HMMER’s Null2-adjusted
 bit score scale, raw dynamic programming scores are linearly scaled:
 <span class="math display">\[\text{Score}_{\text{scaled}} = 0.85 \times
-\text{Score}_{\text{Gotoh}}\]</span> Empirical calibration across 81,650
-exact-boundary, model-matched monomers confirms that this <span
-class="math inline">\(0.85\)</span> factor maps Gotoh log-odds sums to
-HMMER bit scores with high consistency: - <strong>Training split (chr1,
-chr3, chr8; <span class="math inline">\(n = 23,506\)</span>):</strong>
-Mean ratio <span class="math inline">\(0.8495 \pm 0.0074\)</span> (SD),
-SEM <span class="math inline">\(0.000048\)</span>, Median <span
+\text{Score}_{\text{Gotoh}}\]</span> Empirical calibration across 81,661
+exact-boundary, model-matched monomers across 10 finished chromosomes
+confirms that this <span class="math inline">\(0.85\)</span> factor maps
+Gotoh log-odds sums to HMMER bit scores with high consistency: -
+<strong>Training split (chr1, chr3, chr8; <span class="math inline">\(n
+= 23,506\)</span>):</strong> Mean ratio <span
+class="math inline">\(0.8495 \pm 0.0074\)</span> (SD), SEM <span
+class="math inline">\(0.000048\)</span>, Median <span
 class="math inline">\(0.8504\)</span> (IQR: 0.8469–0.8534). -
 <strong>Independent validation set (chr10, chr11, chr12, chr14, chr17,
-chr22, chrY; <span class="math inline">\(n = 58,144\)</span>):</strong>
-Mean ratio <span class="math inline">\(0.8484 \pm 0.0084\)</span> (SD),
-SEM <span class="math inline">\(0.000035\)</span>, Median <span
-class="math inline">\(0.8500\)</span> (IQR: 0.8461–0.8535). -
-<strong>Score Stratification:</strong> For canonical high-scoring
-monomers (<span class="math inline">\(\ge 150\)</span> bits,
-representing 98.4% of matched pairs), the mean ratio is <span
-class="math inline">\(0.8507 \pm 0.0065\)</span> (median 0.8517). In the
-lower score regime (100–150 bits, 1.6% of pairs), the mean ratio is
-<span class="math inline">\(0.8198 \pm 0.0128\)</span> (median 0.8210),
-reflecting the proportionately larger impact of HMMER’s
-composition-dependent Null2 corrections on lower-scoring alignments
-(+3.6% relative difference).</p>
-<p>Candidate hits are evaluated against the score density threshold:
-<span
-class="math display">\[\frac{\text{Score}_{\text{scaled}}}{\text{Alignment
-Length}} \ge \text{threshold} - 0.05\]</span> (evaluated to 1 decimal
-place with default threshold <span class="math inline">\(0.70\)</span>),
-matching canonical HumAS-HMMER sensitivity.</p>
+chr22, chrY; <span class="math inline">\(n = 58,155\)</span>):</strong>
+Mean ratio <span class="math inline">\(0.8505 \pm 0.0078\)</span> (SD),
+SEM <span class="math inline">\(0.000032\)</span>, Median <span
+class="math inline">\(0.8522\)</span> (IQR: 0.8471–0.8540). -
+<strong>Score Stratification:</strong> Among the evaluated
+exact-boundary calibration pairs, canonical high-scoring monomers (<span
+class="math inline">\(\ge 150\)</span> bits, representing 98.4% of
+matched pairs, <span class="math inline">\(n = 80,341\)</span>) have a
+mean ratio of <span class="math inline">\(0.8507 \pm 0.0065\)</span>
+(median 0.8517). In the lower score regime (100–150 bits, 1.6% of pairs,
+<span class="math inline">\(n = 1,320\)</span>), the mean ratio is <span
+class="math inline">\(0.8198 \pm 0.0128\)</span> (median 0.8210).
+Weighted mean across splits is <span
+class="math inline">\(\mathbf{0.850209}\)</span>, matching the weighted
+mean across score tiers (<span
+class="math inline">\(\mathbf{0.850210}\)</span>) within <span
+class="math inline">\(&lt;10^{-6}\)</span>.</p>
+<p>Candidate hits pass an upstream density pre-filter: <span
+class="math display">\[d_{\text{raw}} =
+\frac{\text{Score}_{\text{scaled}}}{\text{Alignment Length}} \ge
+\text{threshold} - 0.05\]</span> This 0.05 pre-filter relaxation
+prevents candidate drops prior to NMS. In the final stage, emitted
+records satisfy legacy AWK 1-decimal-place rounding: <span
+class="math display">\[\operatorname{round}_{1\text{
+decimal}}(d_{\text{raw}}) \ge \text{threshold}\]</span> (with default
+threshold <span class="math inline">\(0.70\)</span>), matching canonical
+HumAS-HMMER sensitivity.</p>
 <h4 id="overlap-resolution-and-non-maximum-suppression">Overlap
 Resolution and Non-Maximum Suppression</h4>
 <p>Overlapping candidate alignments are filtered through a 3-stage
@@ -250,17 +259,20 @@ pipeline matching BEDOPS and legacy HumAS-HMMER conventions: 1.
 each candidate interval, FastHumAS identifies all overlapping intervals
 sharing <span class="math inline">\(\ge 10\%\)</span> overlap with
 either element and maps the reference interval to the highest-scoring
-candidate (breaking rare score ties by start coordinate, then length).
-This operates as reference-anchored local non-maximum suppression rather
-than transitive cluster reduction, ensuring that non-overlapping
-elements linked only through an intermediate lower-scoring candidate are
-correctly preserved. 2. <strong>Exact Deduplication
-(<code>exact_dedup</code>):</strong> Preserves the first occurrence of
-each unique BED9 record. 3. <strong>Near-Duplicate Suppression
-(<code>near_dedup</code>):</strong> Sequentially eliminates records
-whose start or end coordinates lie within <span
-class="math inline">\(\pm 10\)</span> bp of an adjacent higher-scoring
-survivor.</p>
+candidate. Rare ties with identical bit scores are broken
+deterministically matching BEDOPS
+<code>ScoreThenGenomicCompareGreater</code>: preferring higher start
+coordinate, then higher end coordinate, and for identical coordinates
+preserving the earliest candidate in <code>sort-bed</code> order
+<code>(chrom, start, end, name, strand)</code>. 2. <strong>Exact
+Deduplication (<code>exact_dedup</code>):</strong> Preserves the first
+occurrence of each unique BED9 record. 3. <strong>Near-Duplicate
+Suppression (<code>near_dedup</code>):</strong> Directly processes the
+deduplicated stream, sequentially eliminating records whose start or end
+coordinates lie within <span class="math inline">\(\pm 10\)</span> bp of
+an adjacent higher-scoring survivor. Finally, records are sorted in
+coordinate order prior to downstream junction healing without altering
+filtering membership.</p>
 <h3 id="corrected-minus-strand-coordinate-symmetry">2.2 Corrected
 Minus-Strand Coordinate Symmetry</h3>
 <p>Target sequences are scanned in both forward (<span
@@ -469,13 +481,14 @@ assembly chromosomes).</em></p>
 <p>Across all mammalian assemblies, FastHumAS completes whole-genome
 annotation in <strong>38–47 minutes</strong> for human and chimpanzee
 genomes and ~65 minutes for complex hominids with expanded arrays
-(gorilla and orangutan), delivering a <strong>23.4× wall-clock
-acceleration</strong> over parallel legacy pipelines and
-<strong>&gt;55×</strong> over sequential execution.</p>
+(gorilla and orangutan), delivering an estimated <strong>23.4×
+wall-clock acceleration</strong> over the parallel legacy baseline
+(~15.2 h) and <strong>&gt;55×</strong> over sequential execution (~36–52
+h).</p>
 <h3 id="annotation-accuracy-and-concordance-with-legacy-humas-hmmer">3.2
 Annotation Accuracy and Concordance with Legacy HumAS-HMMER</h3>
 <p>To validate that FastHumAS achieves high-throughput acceleration
-without sacrificing annotation accuracy—analogous to how
+without sacrificing annotation fidelity—analogous to how
 <em>minimap2</em> (Li, 2018) replaced quadratic alignment via heuristic
 seeding and banded dynamic programming—we performed an exhaustive
 locus-by-locus concordance analysis between FastHumAS and the official
@@ -486,49 +499,48 @@ chr8, chr10, chr11, chr12, chr14, chr17, chr22, chrY), encompassing
 overlap (<span class="math inline">\(\ge 50\%\)</span> coverage on both
 intervals) and 1:1 bipartite matching: - <strong>Sensitivity
 (Recall):</strong> <strong>99.44%</strong> (199,220 / 200,337 legacy
-monomers detected by FastHumAS), demonstrating that the Stage 1 Master
-Profile peak filter captures virtually all true alpha-satellite repeats.
-- <strong>Precision:</strong> <strong>99.96%</strong> (199,220 / 199,302
-FastHumAS calls validated by legacy), demonstrating an absence of
-spurious false positives without any many-to-one inflation. -
-<strong>Strand Orientation Concordance:</strong>
-<strong>100.00%</strong> agreement (199,220 / 199,220) across all
-matched loci. - <strong>Subfamily / HOR Label Concordance:</strong>
-<strong>99.32%</strong> exact model identity. - <strong>Boundary
-Concordance:</strong> <strong>97.59%</strong> (194,419 monomers) agree
-within <span class="math inline">\(\le 3\)</span> bp, and
-<strong>99.74%</strong> (198,711 monomers) agree within <span
+monomers detected by FastHumAS), demonstrating high concordance with
+legacy annotations across finished chromosomes. -
+<strong>Precision:</strong> <strong>99.96%</strong> (199,220 / 199,302
+FastHumAS calls validated by legacy), demonstrating very high agreement
+without many-to-one inflation. - <strong>Strand Orientation
+Concordance:</strong> <strong>100.00%</strong> agreement (199,220 /
+199,220) across all matched loci. - <strong>Subfamily / HOR Label
+Concordance:</strong> <strong>99.32%</strong> exact model identity. -
+<strong>Boundary Concordance:</strong> <strong>97.59%</strong> (194,419
+monomers) agree within <span class="math inline">\(\le 3\)</span> bp,
+and <strong>99.74%</strong> (198,711 monomers) agree within <span
 class="math inline">\(\le 10\)</span> bp. Exact 0-bp boundary identity
 is 41.11% (81,909 monomers), with remaining differences reflecting
 intentional boundary restoration by junction healing.</p>
 <h4 id="detailed-characterization-of-discordant-loci">Detailed
 Characterization of Discordant Loci</h4>
-<p>To evaluate whether the two-stage heuristic incurs any loss of
-biologically relevant repeats, we profiled all discordant records
-between methods: 1. <strong>Legacy-Unique Loci (1,117 records,
-0.56%):</strong> These records have a mean length of only <strong>105.2
-bp</strong> (median 104.0 bp, range 24–204 bp) and low alignment scores
-(mean 87.8; 65.4% scored <span class="math inline">\(&lt;100\)</span>
-and 94.1% scored <span class="math inline">\(&lt;150\)</span>). They
-represent fragmented, partial sub-monomer alignments in degenerate
-pericentromeric boundaries and transposable element insertions near the
-<span class="math inline">\(0.70\)</span> score density threshold,
-rather than canonical 171-bp alpha-satellite units. 2.
-<strong>FastHumAS-Unique Loci (82 records, 0.04%):</strong> These
-records exhibit a mean length of <strong>168.1 bp</strong> (median 169.0
-bp) and robust scores (mean 114.2). They represent full-length canonical
-monomers that were previously discarded by legacy shell scripts due to
-minus-strand coordinate offset collisions. 3. <strong>Gotoh DP
-Recurrence Discordance Analysis:</strong> Comparison of whole-genome
-CHM13 outputs before and after the affine gap recurrence fix confirmed
-that 99.976% of records (488,636 / 488,754) are strictly bit-identical.
-The 125 records formerly classified under gap fix differences had a mean
-length of 169.5 bp (122/125 <span class="math inline">\(\ge 160\)</span>
-bp, mean score 164.2 bits) and reflect full-length competitive monomer
-alignments where the corrected Gotoh gap open/extension penalty shifted
-the optimal alignment path, rather than truncated fragments. The 4
-boundary refinement records exhibited length adjustments between 2 and
-12 bp (two <span class="math inline">\(-2\)</span> bp, one <span
+<p>To evaluate differences between the methods, we profiled discordant
+records across the 10 chromosomes: 1. <strong>Legacy-Unique Loci (1,117
+records, 0.56%):</strong> These records have a mean length of only
+<strong>105.2 bp</strong> (median 104.0 bp, range 24–204 bp) and low
+alignment scores (mean 87.8; 65.4% scored <span
+class="math inline">\(&lt;100\)</span> and 94.1% scored <span
+class="math inline">\(&lt;150\)</span>). They predominantly represent
+fragmented, partial sub-monomer alignments in degenerate pericentromeric
+boundaries near the <span class="math inline">\(0.70\)</span> score
+density threshold. 2. <strong>FastHumAS-Unique Loci (82 records,
+0.04%):</strong> These records exhibit a mean length of <strong>168.1
+bp</strong> (median 169.0 bp) and robust scores (mean 114.2). Their
+length and coordinate properties suggest the hypothesis that they
+represent full-length canonical monomers that were previously discarded
+in the legacy shell pipeline due to minus-strand coordinate offset
+collisions. 3. <strong>Gotoh DP Recurrence Discordance
+Analysis:</strong> Comparison of whole-genome CHM13 outputs before and
+after the affine gap recurrence fix confirmed that 99.976% of records
+(488,636 / 488,754) are strictly bit-identical. The 125 records formerly
+classified under gap fix differences had a mean length of 169.5 bp
+(122/125 <span class="math inline">\(\ge 160\)</span> bp, mean score
+164.2 bits) and reflect full-length competitive monomer alignments where
+the corrected Gotoh gap open/extension penalty shifted the optimal
+alignment path, rather than truncated fragments. The 4 boundary
+refinement records exhibited length adjustments between 2 and 12 bp (two
+<span class="math inline">\(-2\)</span> bp, one <span
 class="math inline">\(-9\)</span> bp, one <span
 class="math inline">\(-12\)</span> bp).</p>
 <h3 id="junction-healing-and-coordinate-rectification">3.3 Junction
@@ -557,14 +569,28 @@ consensus—such as the true active centromeric core of chromosome 22
 monomers)—end-to-end pipeline continuity achieves <strong>99.59% flush
 abutting junctions</strong> (17,073 flush junctions, compared to 0.00%
 [0 / 17,150] in legacy HumAS-HMMER), with only 65 micro-gaps (0.38%), 5
-gaps &gt; 3 bp (recurrent 31-bp structural variant insertions and
-degenerate boundaries), and 1 overlap (-1 bp) remaining. -
-<strong>Biological Interruption Preservation:</strong> Across the whole
-genome, FastHumAS intentionally accepts boundary extensions only when
-supported by consensus or recurrence criteria (accepting 35.1% of
-candidate gap boundaries in HOR and 55.7% in SF), deliberately
-preserving genuine structural insertions and degenerate array
-transitions.</p>
+gaps &gt; 3 bp, and 1 overlap (-1 bp) remaining. Detailed investigation
+of the 5 non-flush gaps confirms: (i) a 219-bp unannotated gap at a
+degenerate pericentromeric array boundary
+(<code>12,789,031–12,789,250</code>), where legacy called two
+sub-100-bit fragments (<code>S2C9H1L.7</code> [score 97.9, 118 bp] and
+<code>S2C14/22H1L.3</code> [score 90.4, 95 bp]); (ii) three identical
+recurrent 31-bp unannotated sequences
+(<code>CAACAAAAAGTGTTTTTCAAAACTGCTGTAT</code>) between monomers
+<code>.7</code> and <code>.6</code> (<code>15,478,940</code>,
+<code>15,480,341</code>, <code>15,488,562</code>), where FastHumAS calls
+full-length 177-bp monomers while legacy split monomer <code>.6</code>
+into two partial fragments (58 bp and 145 bp), with formal determination
+between insertion variant versus model boundary placement requiring
+structural alignment against the canonical repeat unit; and (iii) an
+unannotated 6-bp sequence (<code>CTAAAA</code>,
+<code>15,709,700–15,709,706</code>) in the assembly sequence (where
+legacy similarly leaves an 8-bp gap). - <strong>Biological Interruption
+Preservation:</strong> Across the whole genome, FastHumAS intentionally
+accepts boundary extensions only when supported by consensus or
+recurrence criteria (accepting 35.1% of candidate gap boundaries in HOR
+and 55.7% in SF), deliberately preserving genuine structural insertions
+and degenerate array transitions.</p>
 <hr />
 <h2 id="discussion">4. Discussion</h2>
 <p>Centromere annotation has long been constrained by the computational
@@ -572,9 +598,9 @@ burden of exhaustive profile searches against multi-gigabase assemblies.
 Because both <code>nhmmer</code> and FastHumAS scale linearly with
 sequence length <span class="math inline">\(O(N \cdot M)\)</span> for
 constant monomer length <span class="math inline">\(M=171\)</span>,
-FastHumAS’s <span class="math inline">\(23.4\times\)</span> to <span
-class="math inline">\(&gt;55\times\)</span> acceleration does not alter
-the asymptotic scaling; rather, it eliminates the massive constant
+FastHumAS’s estimated <span class="math inline">\(23.4\times\)</span> to
+<span class="math inline">\(&gt;55\times\)</span> acceleration does not
+alter the asymptotic scaling; rather, it eliminates the massive constant
 factors of exhaustive search—evaluating 1,963 individual profile models
 across 3 billion base pairs—by employing an in-memory “minimap for
 HMMER” architecture: a 1-pass consensus Master Profile seed filter,
@@ -587,7 +613,7 @@ and 100.00% strand agreement</strong> against the official HumAS-HMMER
 pipeline across 200,337 loci, FastHumAS serves as a direct, drop-in
 replacement for the T2T CenSat ecosystem. Discordance analysis reveals
 that FastHumAS filters out degraded, fragmented sub-monomers (mean
-length 105 bp) while rescuing bona fide canonical monomers (mean length
+length 105 bp) while capturing candidate canonical monomers (mean length
 168 bp) formerly lost to coordinate shifting bugs. Furthermore, by
 generating all four standard CenSat BED tracks with canonical 218-color
 palettes and offering a built-in <code>--legacy</code> verification

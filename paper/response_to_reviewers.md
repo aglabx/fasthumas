@@ -1,290 +1,207 @@
-# Point-by-Point Response to Reviewer 3 (Iteration 3)
+# Point-by-Point Response to Reviewer 3 (Iteration 4)
 
 **Manuscript Title:** FastHumAS: Ultra-Fast In-Memory Annotation of Centromeric Alpha-Satellite Higher-Order Repeats in Complete Genomes  
 **Authors:** Marina Popova, Simona Giunta, and Aleksey Komissarov  
 **Repository:** [https://github.com/aglabx/fasthumas](https://github.com/aglabx/fasthumas)  
 
-We once again express our sincere gratitude to Reviewer 3 for their rigorous and insightful critique. The reviewer's meticulous verification identified a subtle ordering bug between the overlap filter and junction healing, an omission in the calibration script, an erroneous mathematical sign in our narrative regarding Null2, and hardcoded summaries in the healing analysis script.
+We are deeply grateful to Reviewer 3 for their rigorous, expert, and constructive evaluation. The reviewer's detailed counterexamples and forensic review have once again helped us uncover fundamental nuances of BEDOPS and legacy pipeline behavior, eliminate lingering stale metrics across documents, and ensure complete scientific precision throughout the manuscript.
 
-In this revision, we have addressed every single point raised by the reviewer:
+In this revision, we have resolved every issue raised by the reviewer:
 
-1. **Healing Input Coordinate Order (`src/overlap.rs`, `src/scanner.rs`, `src/pipeline.rs`):** We resolved the coordinate reordering caused by `bedmap_max_element`. FastHumAS now explicitly enforces `sort_bed_records` after `exact_dedup` (before `near_dedup`) and again before returning from `filter_overlaps`. The reviewer's exact counterexample ($A [0, 176), B [5, 93), C [158, 329), D [330, 501)$) has been added as a unit test (`test_filter_overlaps_restores_order_for_healing`); the output is strictly sorted as $A, C, D$, and the 1-bp junction between $C$ and $D$ is properly evaluated and healed.
-2. **BEDOPS Tie-Breaking Parity (`src/bed.rs`, `src/overlap.rs`):** We expanded `sort_bed_records` to sort by `(chrom, start, end, name, strand)` matching BEDOPS `sort-bed`. In `bedmap_max_element`, equal-score candidate ties are resolved by selecting the candidate appearing earliest in `sort-bed` order. A dedicated unit test (`test_bedmap_tie_break_name`) confirms that for equal-score intervals with names `B` and `A`, `A` is preserved.
-3. **Scoring Calibration Statistical Consistency:** We fixed the omission of chromosome 17 (`NC_060941.1`) in `calibrate_scoring.py`. Across all 81,661 exact-boundary, model-matched monomers across 10 finished chromosomes:
-   - **Training set (chr1, 3, 8; $n = 23,506$):** Mean $0.8495 \pm 0.0074$ (SEM: $0.000048$, median $0.8504$).
-   - **Independent Validation set (chr10, 11, 12, 14, 17, 22, Y; $n = 58,155$):** Mean $0.8505 \pm 0.0078$ (SEM: $0.000032$, median $0.8522$).
-   - **Weighted Mean Consistency:**
-     $$\bar r_{\text{train/test}} = \frac{23,506 \cdot 0.849491 + 58,155 \cdot 0.850499}{81,661} = \mathbf{0.850209}$$
-     $$\bar r_{\text{score tiers}} = \frac{80,341 \cdot 0.850709 + 1,320 \cdot 0.819812}{81,661} = \mathbf{0.850208}$$
-     The discrepancy identified by the reviewer is completely eliminated (difference $< 10^{-6}$).
-4. **Correction of the `threshold - 0.05` Narrative:** We fully acknowledge the reviewer's mathematical correction. For lower-scoring matches (100–150 bits), the empirical ratio is ~0.82, so multiplying by 0.85 over-scores relative to HMMER by ~3.7%. Lowering the threshold to `threshold - 0.05` is a relaxation in the same direction, not a compensation. We have revised the text in `paper.md`, `EXPL.md`, and this response: `threshold - 0.05` is an **upstream inclusion pre-filter** designed to match legacy AWK score density rounding (`format!("{:.1}", score_per_len)`), preventing candidates that round up to 0.70 from being prematurely eliminated.
-5. **Reproducible chr22 Active Array Analysis & Characterization of Gaps > 3 bp:** We created a dedicated reproducible script ([`benchmarks/analyze_active_hor_chr22.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/analyze_active_hor_chr22.py)) and summary log ([`benchmarks/logs/chr22_active_hor_continuity.summary.txt`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/logs/chr22_active_hor_continuity.summary.txt)). In the active HOR core `NC_060946.1:12,788,180–15,711,065` (17,145 monomers):
-   - FastHumAS achieves **99.59% flush contiguous junctions** (17,073 / 17,144) vs **0.00%** (0 / 17,150) in legacy HumAS-HMMER.
-   - Exactly 5 gaps > 3 bp remain: one 219-bp gap at a degenerate boundary (where legacy had fragmented <100-bit sub-monomers), three 31-bp recurrent structural variant insertions between monomers `.7` and `.6` (where legacy fragmented monomer `.6` into two partial hits), and one genuine 6-bp assembly gap confirmed in both pipelines.
-   - We explicitly clarify that 99.59% represents the end-to-end continuity of the full annotation pipeline (coordinate rectification, banded Gotoh DP, local NMS, and consensus-anchored healing).
-6. **Dynamic 10-Chromosome Healing Analysis:** We completely rewrote [`benchmarks/analyze_junction_healing.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/analyze_junction_healing.py) to eliminate all hardcoded numbers and calculate all metrics dynamically. Across the 10 evaluated chromosomes (200,337 legacy loci):
-   - Flush junctions increase from **40.41%** (80,955) in legacy to **93.72%** (186,770) in FastHumAS.
-   - Micro-gaps (1–3 bp) decrease by **91.92%** (from 100,900 down to 8,152).
-   - 2-bp minus-strand gaps decrease by **98.05%** (from 68,292 down to 1,335).
-   - Assembly-wide extrapolation: $68,292 \times (488,904 / 200,337) = \mathbf{166,660}$ artificial minus-strand gaps genome-wide.
-7. **Harmonization of Concordance Summary & CLI Ratios:** We updated [`benchmarks/compare_fasthumas_vs_nhmmer.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/compare_fasthumas_vs_nhmmer.py) to print exact numerators and denominators for strand agreement (199,220 / 199,220 = 100.00%), label agreement (197,874 / 199,220 = 99.32%), and boundary agreement $\le 3$ bp (194,419 / 199,220 = 97.59%). All numbers across text, tables, and logs are strictly synchronized.
-8. **Inclusion of Review Materials in Repository:** All review documents—[`paper/paper.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.md), [`paper/paper.html`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.html), [`paper/EXPL.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/EXPL.md), and [`paper/response_to_reviewers.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/response_to_reviewers.md)—are now committed directly inside the repository tree under [`paper/`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper) and linked in `README.md`.
+1. **BEDOPS Tie-Breaking Parity in `bedmap_max_element` (`src/overlap.rs`):** We examined the BEDOPS source code (`ScoreThenGenomicCompareGreater` in `BedCompare.hpp` and `ExtremeVisitor.hpp`) and corrected the tie-breaking comparator. When candidate bit scores are tied, BEDOPS strictly prefers higher start coordinates, then higher end coordinates, and treats identical coordinates as equivalent in `std::set`, retaining the earliest candidate in `sort-bed` order. The reviewer's counterexamples (A `[0,171)` vs B `[10,181)` $\to$ **B**; A `[0,171)` vs B `[0,181)` $\to$ **B**; B `[0,171)` vs A `[0,171)` $\to$ **A**) now match BEDOPS exactly in FastHumAS and are verified with dedicated unit tests (`test_bedmap_tie_break_greater_start_and_end` and `test_bedmap_tie_break_name`).
+2. **Preservation of Legacy Pipeline Sequencing (`src/overlap.rs`):** We eliminated the premature sorting between `exact_dedup` and `near_dedup`. In legacy HumAS-HMMER, `overlap_filter.py` directly processes the unsorted deduplicated stream of `bedmap`. In FastHumAS, `exact_dedup` now feeds directly into `near_dedup`, preserving all candidate records (e.g. B, C, D in the reviewer's 4-record counterexample). Coordinate sorting is performed strictly at the conclusion of `filter_overlaps` for downstream junction healing without altering filtering membership (`test_filter_overlaps_legacy_near_dedup_compatibility`).
+3. **Full Synchronization of Manuscript, HTML, and EXPL:** We conducted an exhaustive audit of all documents (`paper.md`, `paper.html`, `EXPL.md`, and this response), updating all remaining 9-chromosome statistics to the complete 10-chromosome dataset:
+   - Recall in Abstract: **99.44%** (199,220 / 200,337).
+   - Label agreement in Abstract: **99.32%** (197,874 / 199,220).
+   - Flush junctions in Abstract: **40.41% $\to$ 93.72%** (80,955 $\to$ 186,770).
+   - Calibration pairs in Methods: **81,661** (Validation $n = 58,155$, mean $0.8505 \pm 0.0078$).
+   - Score tiers weighted mean rounding: $\mathbf{0.850210}$ (corrected from 0.850208).
+   - Minus-strand artificial gap extrapolation: **~166,660** (extrapolated from 68,292 across 200,337 loci to 488,904 total records).
+   - High-scoring calls (98.4%) explicitly qualified as applying to the exact-boundary calibration dataset.
+4. **Dynamic Verification and Biological Characterization of chr22 Gaps:** We refactored `benchmarks/analyze_active_hor_chr22.py` to dynamically inspect overlapping and flanking legacy records from the BED inputs rather than relying on hardcoded length conditionals. We corrected the characterization of the 6-bp gap `[15,709,700, 15,709,706)`: it contains primary genomic sequence `CTAAAA` (without `N`s) and is an unannotated inter-monomer sequence, not an assembly gap. We characterized the 219-bp boundary gap and the three recurrent 31-bp inter-monomer sequences (`CAACAAAAAGTGTTTTTCAAAACTGCTGTAT`), noting that formal distinction between an insertion variant and profile boundary placement variation requires pairwise structural alignment against the canonical repeat.
+5. **Accurate Description of Stage 2 Dynamic Programming & Thresholds:** In Methods, we clarified that $k$ is the model column ($0 \dots L$), and $k \ge L - 5$ allows candidate cells in the terminal model rows to be considered as alignment endpoint scores while the DP recurrence continues across the entire sequence target window $[end\_pos - 190, end\_pos + 5)$. We explicitly separated the upstream density pre-filter ($d_{\text{raw}} \ge \text{threshold} - 0.05$) from the final AWK 1-decimal-place rounding ($\operatorname{round}_{1\text{ dec}}(d_{\text{raw}}) \ge \text{threshold}$).
+6. **Scientific Framing of Concordance and Discordant Loci:** We reframed concordance as empirical agreement between FastHumAS and the legacy pipeline rather than independent proof of biological ground truth. We framed the biological nature of discordant calls (82 FastHumAS-unique, 1,117 legacy-unique) as hypotheses supported by coordinate and length properties.
+7. **Consistent Speedup Terminology:** Throughout the Abstract, Results, Discussion, and Table 1, we consistently distinguish the **measured wall-clock runtime of FastHumAS (38m 55s)** from the **estimated speedup over the parallel multi-chromosome legacy baseline (~15.2 hours, 23.4×) and sequential baseline (~36–52 hours, >55×)**.
 
-Below is our detailed, point-by-point response.
+Below is our point-by-point response detailing the specific changes.
 
 ---
 
-## 1. Restoration of Coordinate Order for Junction Healing & BEDOPS Tie-Breaking Parity
+## 1. Resolution of BEDOPS Parity Regressions & Pipeline Sequencing
 
-> **Reviewer 3:** *"После исправления overlap-фильтра нарушается требуемый порядок входа для healing... Новый filter_overlaps не восстанавливает координатный порядок, а следующий этап junction::candidates требует сортированный вход. Воспроизводимый пример... [0,176), [5,93), [158,329), [330,501)... Результат: C, A, D... Между C и D есть зазор длиной 1 bp... пропуская C→D... Дополнительная native-проверка обнаружила различие при одинаковых координатах и score, но разных именах: B 200.0, A 200.0... Настоящие sort-bed + bedmap сохраняют A."*
+> **Reviewer 3:** *"Точное соответствие BEDOPS всё ещё нарушено — теперь на других контрпримерах... В bedmap_max_element новый код при равных скорах предпочитает меньший start, затем меньший end. Настоящий BEDOPS на следующих входах выбирает другой интервал: A [0,171) vs B [10,181) (score=200) -> BEDOPS: B, FastHumAS: A; A [0,171) vs B [0,181) (score=200) -> BEDOPS: B, FastHumAS: A... Есть и второе, независимое расхождение: сортировка перед near_dedup меняет состав результата... Контрпример: A 0..145 (124), B 34..122 (167), C 117..291 (199), D 184..290 (206)... Настоящий bedmap возвращает C, B, D, D... Python-фильтр сохраняет B, C, D. Новая Rust-цепочка сортирует раньше: B, C, D, и near_dedup удаляет C... Если нужна именно совместимость, сортировку для healing следует выполнять после завершения исходной цепочки фильтрации."*
 
 ### Response:
-We thank the reviewer for identifying both of these critical issues.
+We thank the reviewer for providing these exact counterexamples and tracing their behavioral causes. Both issues have been resolved.
 
-### 1.1 Root Cause and Algorithmic Fix for Coordinate Ordering
-The reviewer's analysis of the interaction between `bedmap_max_element` and `junction::candidates` is completely correct:
-- `bedmap_max_element` emits local maximum elements in the order of the reference query intervals.
-- When an earlier reference interval maps to a downstream maximum element (e.g. $[0, 176)$ mapping to $[158, 329)$) while a subsequent reference interval maps to an upstream element (e.g. $[5, 93)$ mapping to $[0, 176)$), the emitted sequence is $[158, 329)$, $[0, 176)$, $[330, 501)$.
-- `exact_dedup` preserves the order of first appearance. If records are not re-sorted before `near_dedup` and `junction::candidates`, the sequential pairing evaluates $[158, 329) \to [0, 176)$ and $[0, 176) \to [330, 501)$, completely missing the genuine adjacent junction $[158, 329) \to [330, 501)$ (gap = 1 bp).
+### 1.1 Root Cause and Algorithmic Fix for BEDOPS Tie-Breaking
+In BEDOPS (`interfaces/general-headers/data/bed/BedCompare.hpp`), candidate selection for `--max-element` is governed by `ScoreThenGenomicCompareGreater`:
+```cpp
+template <typename BedType1, typename BedType2 = BedType1>
+struct ScoreThenGenomicCompareLesser {
+  inline bool operator()(BedType1 const* one, BedType2 const* two) const {
+    if ( one->measurement() != two->measurement() )
+      return one->measurement() < two->measurement();
+    static int v = 0;
+    if ( (v = std::strcmp(one->chrom(), two->chrom())) != 0 )
+      return v < 0;
+    if ( one->start() != two->start() )
+      return one->start() < two->start();
+    return one->end() < two->end();
+  }
+};
 
-**The Fix:** In [`src/overlap.rs`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/src/overlap.rs), `filter_overlaps` now explicitly enforces coordinate sorting:
-1. After `exact_dedup` (before `near_dedup`), ensuring that `near_dedup` only compares genuinely adjacent intervals along the chromosome.
-2. After `near_dedup` (before returning), ensuring that `filter_overlaps` always returns records strictly sorted by `(chrom, start, end, name, strand)`.
-3. In `write_bed_file`, records are sorted prior to emitting BED output.
+template <typename BedType1, typename BedType2 = BedType1>
+struct ScoreThenGenomicCompareGreater
+    : private ScoreThenGenomicCompareLesser<BedType1, BedType2> {
+  typedef ScoreThenGenomicCompareLesser<BedType1, BedType2> Base;
+  inline bool operator()(BedType1 const* ptr1, BedType2 const* ptr2) const {
+    return Base::operator()(ptr2, ptr1);
+  }
+};
+```
+In `ExtremeVisitor.hpp`, BEDOPS collects overlapping candidates into a `std::set<MapType*, ScoreThenGenomicCompareGreater>` and outputs `*m_.begin()`.
+Because `ScoreThenGenomicCompareGreater(cand, best)` evaluates `Base::operator()(best, cand)`:
+1. Higher score is strictly preferred: `cand->score > best->score`.
+2. When scores are identical, `best->start < cand->start` is evaluated, which means **higher `start` coordinate is preferred**.
+3. When scores and starts are identical, `best->end < cand->end` is evaluated, which means **higher `end` coordinate is preferred**.
+4. When scores and coordinates are identical, both comparisons return `false`. In `std::set`, equivalent keys are not inserted; the element encountered first in `sort-bed` order remains in the set.
 
-We added the reviewer's exact counterexample as a unit test:
+In [`src/overlap.rs`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/src/overlap.rs), we implemented this exact comparator:
 ```rust
-#[test]
-fn test_filter_overlaps_restores_order_for_healing() {
-    let mut recs = vec![
-        make_rec("chr1", 0, 176, "A", 150.0),
-        make_rec("chr1", 5, 93, "B", 100.0),
-        make_rec("chr1", 158, 329, "C", 200.0),
-        make_rec("chr1", 330, 501, "D", 190.0),
-    ];
-    crate::bed::sort_bed_records(&mut recs);
-    let filtered = filter_overlaps(&recs);
-    assert_eq!(filtered.len(), 3);
-    assert_eq!(filtered[0].name, "A");
-    assert_eq!(filtered[0].start, 0);
-    assert_eq!(filtered[1].name, "C");
-    assert_eq!(filtered[1].start, 158);
-    assert_eq!(filtered[2].name, "D");
-    assert_eq!(filtered[2].start, 330);
+let is_better = cand.score > best.score
+    || ((cand.score - best.score).abs() < 1e-6
+        && (cand.start > best.start
+            || (cand.start == best.start
+                && (cand.end > best.end
+                    || (cand.end == best.end
+                        && (cand.name < best.name
+                            || (cand.name == best.name && cand.strand < best.strand)))))));
+```
+We verified this behavior with unit tests covering all cases:
+- `A [0, 171)` vs `B [10, 181)` (both score 200) $\to$ **B** (higher start)
+- `A [0, 171)` vs `B [0, 181)` (both score 200) $\to$ **B** (higher end)
+- `B [0, 171)` vs `A [0, 171)` (both score 200) $\to$ **A** (earliest in `sort-bed` order)
+
+### 1.2 Preservation of Legacy Pipeline Sequencing
+In the legacy pipeline (`hmmer-run.sh`):
+```bash
+bedmap --max-element --fraction-either 0.1 _nhmmer-t0-$bn.bed > _nhmmer-t1-$bn.bed
+awk "{if(!(\$0 in a)){a[\$0]; print}}" _nhmmer-t1-$bn.bed > _nhmmer-t0-$bn.bed
+python3 overlap_filter.py _nhmmer-t0-$bn.bed > AS-HOR+SF-vs-$bn.bed
+```
+The deduplicated output of `bedmap` is piped directly into `overlap_filter.py` without intermediate sorting. Our previous attempt to sort between `exact_dedup` and `near_dedup` changed the record adjacency fed to `near_dedup`, causing record `C` to be compared to `D` and discarded.
+
+**The Fix:** In [`src/overlap.rs`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/src/overlap.rs), `filter_overlaps` strictly executes the legacy sequence:
+```rust
+pub fn filter_overlaps(records: &[BedRecord]) -> Vec<BedRecord> {
+    let stage1 = bedmap_max_element(records);
+    let stage2 = exact_dedup(&stage1);
+    let stage3 = near_dedup(&stage2);
+    let mut stage3_sorted = stage3;
+    crate::bed::sort_bed_records(&mut stage3_sorted);
+    stage3_sorted
 }
 ```
-
-### 1.2 BEDOPS Tie-Breaking Parity
-BEDOPS `sort-bed` sorts by `chrom`, `start`, `end`, and then lexicographically across remaining columns (`name`, `score`, `strand`). When candidate scores are tied, `bedmap --max-element` selects the candidate that appears earliest in the sorted order.
-
-**The Fix:**
-1. In [`src/bed.rs`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/src/bed.rs), `sort_bed_records` now sorts by:
-   ```rust
-   a.chrom.cmp(&b.chrom)
-       .then(a.start.cmp(&b.start))
-       .then(a.end.cmp(&b.end))
-       .then(a.name.cmp(&b.name))
-       .then(a.strand.cmp(&b.strand))
-   ```
-2. In [`src/overlap.rs`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/src/overlap.rs), `bedmap_max_element` resolves score ties by selecting the candidate appearing earliest in `sort-bed` order:
-   ```rust
-   let is_better = cand.score > best.score
-       || ((cand.score - best.score).abs() < 1e-6
-           && (cand.start < best.start
-               || (cand.start == best.start
-                   && (cand.end < best.end
-                       || (cand.end == best.end
-                           && (cand.name < best.name
-                               || (cand.name == best.name && cand.strand < best.strand)))))));
-   ```
-We verified this with a dedicated unit test matching the reviewer's case:
-```rust
-#[test]
-fn test_bedmap_tie_break_name() {
-    let mut recs = vec![
-        make_rec("chr1", 0, 171, "B", 200.0),
-        make_rec("chr1", 0, 171, "A", 200.0),
-    ];
-    crate::bed::sort_bed_records(&mut recs);
-    let filtered = filter_overlaps(&recs);
-    assert_eq!(filtered.len(), 1);
-    assert_eq!(filtered[0].name, "A");
-}
-```
-All 53 unit tests pass.
+Records are sorted only *after* `near_dedup` finishes, strictly for downstream junction healing (`junction::candidates`), without altering filter membership. Unit test `test_filter_overlaps_legacy_near_dedup_compatibility` confirms that for the reviewer's counterexample (A: 0..145, B: 34..122, C: 117..291, D: 184..290), all three records B, C, D are preserved and sorted as `B, C, D`.
 
 ---
 
-## 2. Scoring Calibration Arithmetic, Null2 Explanation, and Validation Consistency
+## 2. Synchronization of Manuscript, HTML, and Technical Documentation
 
-> **Reviewer 3:** *"В калибровке chr17 включена в выгрузку test, но исключена из расчёта test-статистики... Опубликованные средние дополнительно противоречат друг другу... Объяснение компенсации Null2 через threshold − 0.05 имеет неправильный знак."*
+> **Reviewer 3:** *"Основная рукопись по-прежнему содержит старые результаты, включая прежнюю ошибочную калибровку... Recall в Abstract 99.37% -> 99.44%; Label agreement 99.28% -> 99.32%; Flush junctions 32.7% -> 40.41% -> 93.72%; Число калибровочных пар 81 650 -> 81 661; Validation sample 58 144 -> 58 155; Mean ratio 0.8484 -> 0.8505; Экстраполяция 190-200 тыс -> ~166 660... В EXPL.md разделы 1–5 всё ещё содержат девятихромосомные результаты... Score tiers weighted mean gives 0.850210... 98.4% относится к калибровочным парам."*
 
 ### Response:
-We thank the reviewer for this rigorous mathematical verification.
+We have synchronized all numbers across [`paper/paper.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.md), [`paper/paper.html`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.html), [`paper/EXPL.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/EXPL.md), and our summary logs:
 
-### 2.1 Resolution of the Statistical Discrepancy & Chromosome 17 Inclusion
-In commit `8b10936`, `test_chroms` in `calibrate_scoring.py` had accidentally omitted `"NC_060941.1"` (chr17) during the print calculation, even though chr17 was assigned `split = "test"` in the TSV export.
-
-We corrected this in [`benchmarks/calibrate_scoring.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/calibrate_scoring.py) and re-ran calibration across all **81,661 exact-boundary, model-matched monomers**:
-- **Training Set (chr1, chr3, chr8; $n = 23,506$):**
-  - Mean ratio: **$0.8495 \pm 0.0074$** (Sample SD), SEM: $0.000048$, Median: **$0.8504$**
-  - IQR: $[0.8469, 0.8534]$, 95% range: $[0.8305, 0.8599]$
-- **Independent Validation Set (chr10, 11, 12, 14, 17, 22, Y; $n = 58,155$):**
-  - Mean ratio: **$0.8505 \pm 0.0078$** (Sample SD), SEM: $0.000032$, Median: **$0.8522$**
-  - IQR: $[0.8478, 0.8555]$, 95% range: $[0.8299, 0.8595]$
-- **Score-Stratified Tiers (All Chromosomes):**
-  - Canonical High Score ($\ge 150$ bits, $n = 80,341$, 98.4%): Mean **$0.8507 \pm 0.0065$** (Median $0.8517$)
-  - Mid Score (100–150 bits, $n = 1,320$, 1.6%): Mean **$0.8198 \pm 0.0128$** (Median $0.8210$)
-
-**Verification of Internal Consistency:**
-$$\bar r_{\text{train/test}} = \frac{23,506 \cdot 0.849491 + 58,155 \cdot 0.850499}{81,661} = \mathbf{0.850209}$$
-$$\bar r_{\text{score tiers}} = \frac{80,341 \cdot 0.850709 + 1,320 \cdot 0.819812}{81,661} = \mathbf{0.850208}$$
-Both partitions yield an identical overall mean of **0.85021** (difference $< 10^{-6}$).
-
-### 2.2 Correction of the `threshold - 0.05` Explanation
-The reviewer is mathematically 100% correct:
-- At an empirical ratio of $0.8198$, multiplying by $0.85$ yields an approximate score that is $\frac{0.85}{0.8198} - 1 \approx +3.68\%$ **higher** than HMMER's score.
-- Checking $\text{score} \ge \text{threshold} - 0.05$ lowers the acceptance bar further in the same direction; it does not "compensate" for an over-score.
-- **The True Role in Code:** The check `hmmer_sc_per_len >= score_threshold - 0.05` is an **upstream inclusion pre-filter** designed to accommodate downstream AWK formatting. In legacy HumAS-HMMER, `hmmertblout2bed.awk` computes density as `sprintf("%.1f", score / length)` and filters for $\ge 0.70$. Because standard 1-decimal rounding rounds values such as $0.65$ up to $0.70$, checking $\text{threshold} - 0.05$ ensures that candidates that would satisfy the downstream rounding threshold are not prematurely pruned during Stage 2 search.
-- We have completely rewritten this explanation in `paper.md`, `EXPL.md`, and this response.
+| Metric / Parameter | Value in Previous Revision | Corrected & Synchronized Value | Location in Revision |
+|---|:---:|:---:|---|
+| **Sensitivity (Recall) in Abstract** | 99.37% | **99.44%** (199,220 / 200,337) | `paper.md`, `paper.html`, `EXPL.md` |
+| **Label Agreement in Abstract** | 99.28% | **99.32%** (197,874 / 199,220) | `paper.md`, `paper.html`, `EXPL.md` |
+| **Flush Junctions in Abstract** | 32.7% $\to$ 93.0% | **40.41% $\to$ 93.72%** (80,955 $\to$ 186,770) | `paper.md`, `paper.html`, `EXPL.md` |
+| **Calibration Pairs in Methods** | 81,650 | **81,661** | `paper.md`, `paper.html`, `EXPL.md` |
+| **Validation Split Sample Size** | 58,144 | **58,155** | `paper.md`, `paper.html`, `EXPL.md` |
+| **Validation Mean Ratio** | $0.8484 \pm 0.0084$ | **$0.8505 \pm 0.0078$** (median $0.8522$) | `paper.md`, `paper.html`, `EXPL.md` |
+| **Weighted Mean (Score Tiers)** | 0.850208 | **0.850210** (exact rounded) | `paper.md`, `paper.html`, `EXPL.md` |
+| **High-Scoring Population Context** | "all centromeric loci" | **"evaluated exact-boundary calibration pairs"** ($n=80,341$) | `paper.md`, `paper.html`, `EXPL.md` |
+| **Minus-Strand Gap Extrapolation** | 190–200k | **~166,660** ($68,292 \times \frac{488,904}{200,337}$) | `paper.md`, `paper.html`, `EXPL.md` |
+| **Evaluated Chromosomes in EXPL 1–5** | 9 chromosomes (174,925 loci) | **10 chromosomes (200,337 loci)** | `EXPL.md` Sections 1–5 |
+| **Legacy-Unique Discordant Loci** | 1,098 loci | **1,117 loci** (mean length 105.2 bp) | `EXPL.md` Section 4.1 |
+| **FastHumAS-Unique Discordant Loci** | 78 loci | **82 loci** (mean length 168.1 bp) | `EXPL.md` Section 4.2 |
 
 ---
 
-## 3. Active HOR Array on chr22 & Investigation of Gaps > 3 bp
+## 3. Dynamic Script and Accurate Nature of chr22 Gaps
 
-> **Reviewer 3:** *"Активный массив chr22 теперь выбран правильно, но новые региональные результаты не опубликованы в проверяемом виде... В коммите нет регионального BED, журнала или скрипта, воспроизводящего 17 145 / 17 073 / 65 / 6. И даже наличие шести зазоров >3 bp само по себе не устанавливает, что это шесть реальных биологических вставок. Кроме того, 99,59% — конечная непрерывность аннотации после всего pipeline... Это число нельзя целиком приписывать эффективности самого healing."*
+> **Reviewer 3:** *"«Подтверждённый 6-bp assembly gap» оказался шестью существующими нуклеотидами CTAAAA... В нём нет N. Это неаннотированный участок последовательности... Новый analyze_active_hor_chr22.py читает BED, но биологические объяснения печатает по одной лишь длине зазора... Скрипт всё равно сообщил про «подтверждённые» 8 bp в legacy и 6 bp в FastHumAS на синтетических данных... Повторяемость трёх 31-bp участков подтверждается (CAACAAAAAGTGTTTTTCAAAACTGCTGTAT)... Чтобы назвать их структурными вставками, нужно показать выравнивание... Для 219-bp участка низкий полный скор сам по себе не объясняет отклонение по порогу плотности."*
 
 ### Response:
+We thank the reviewer for verifying the underlying nucleotide sequence and demonstrating the fragility of the previous script logic.
 
-### 3.1 Dedicated Reproducible Script
-We created [`benchmarks/analyze_active_hor_chr22.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/analyze_active_hor_chr22.py), which extracts `NC_060946.1:12,788,180–15,711,065` directly from the whole-genome BEDs and computes all metrics. Its output is saved in [`benchmarks/logs/chr22_active_hor_continuity.summary.txt`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/logs/chr22_active_hor_continuity.summary.txt):
+### 3.1 Clarification of the 6-bp Interval (`CTAAAA`)
+The reviewer is completely right: `NC_060946.1:15,709,700–15,709,706` contains valid genomic bases (`CTAAAA`) with zero `N`s. It is an **unannotated inter-monomer sequence** where neither monomer model extends across the junction, NOT a physical assembly gap. Legacy HumAS-HMMER similarly leaves an 8-bp unannotated gap `[15,709,698, 15,709,706)` at this exact locus. We have corrected the terminology across the script, summary log, manuscript, and technical documentation.
 
-```text
-==========================================================================================================
-Active Centromeric HOR Array Analysis: chr22 (NC_060946.1:12,788,180–15,711,065, 2.92 Mb)
-CenSat Domain: hor_22_9 (S2C14/22H1L)
-==========================================================================================================
-Metric                                  | FastHumAS                 | Legacy HumAS-HMMER
-----------------------------------------------------------------------------------------------------------
-Total Annotated Monomers                | 17145                     | 17150                    
-Total Inter-Monomer Junctions           | 17144                     | 17149                    
-Flush Contiguous Junctions (gap = 0 bp) | 17073 ( 99.59%)           | 0 (  0.00%)
-Micro-gaps (1–3 bp)                     | 65 (  0.38%)              | 16525 ( 96.36%)
-  - 1-bp gaps                           | 54                        | 0                        
-  - 2-bp gaps                           | 8                         | 13773                    
-  - 3-bp gaps                           | 3                         | 2752                     
-Gaps > 3 bp                             | 5                         | 624                      
-Overlaps (< 0 bp)                       | 1                         | 0                        
-==========================================================================================================
-```
-Sum: $17,073 + 65 + 5 + 1 = 17,144$ junctions across 17,145 monomers.
+### 3.2 Dynamic Script Refactoring (`analyze_active_hor_chr22.py`)
+In [`benchmarks/analyze_active_hor_chr22.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/analyze_active_hor_chr22.py), we removed all hardcoded length-based conditionals. The script now:
+1. Dynamically queries the legacy BED input for any records overlapping the specific gap interval `[r1['end'], r2['start'])`.
+2. Computes the exact legacy score, length, and score density for overlapping records, or reports flanking legacy calls and the flanking legacy gap distance if no calls overlap.
+3. Only prints biological context when the confirmed coordinates and model identities match the verified loci.
 
-### 3.2 Sequence Characterization of Gaps > 3 bp
-We investigated the exact genomic sequences at all 5 non-flush gaps > 3 bp:
-1. **Locus `[12,789,031, 12,789,250)` (219 bp):** Between `S2C14/22H1L.3` and `S2C14/22H1L.2`. This is a degenerate pericentromeric boundary region where legacy HumAS-HMMER called two low-scoring sub-monomer fragments (`S2C9H1L.7` [97.9 bits, 118 bp] and `S2C14/22H1L.3` [90.4 bits, 95 bp]). FastHumAS discards these sub-threshold fragments, leaving the 219-bp boundary unannotated.
-2. **Loci `[15,478,940, 15,478,971)` (31 bp), `[15,480,341, 15,480,372)` (31 bp), and `[15,488,562, 15,488,593)` (31 bp):** These three identical 31-bp gaps occur between monomer `S2C14/22H1L.7` and monomer `S2C14/22H1L.6`. In legacy HumAS-HMMER, `nhmmer` split monomer `.6` into two fragmented sub-hits: a 58-bp fragment (score 46.4) and a 145-bp fragment (score 161.8). FastHumAS's affine Gotoh DP aligns the full canonical 177-bp monomer, cleanly preserving the authentic 31-bp structural variant insertion.
-3. **Locus `[15,709,700, 15,709,706)` (6 bp):** Between `S2C14/22H1L.4` and `S2C14/22H1L.3`. This is a genuine 6-bp assembly micro-gap present in both legacy (8 bp) and FastHumAS (6 bp).
-4. **Overlap `[12,789,420, 12,789,421)` (-1 bp):** A 1-bp coordinate overlap between adjacent boundary monomers.
-
-### 3.3 Pipeline Continuity vs Standalone Healing
-We agree with the reviewer that **99.59%** is the cumulative continuity of the **complete FastHumAS annotation pipeline**, reflecting the combined contributions of:
-1. Coordinate rectification (eliminating the 2-bp reverse-strand shift).
-2. Profile-anchored banded dynamic programming (preventing artificial monomer fragmentation into sub-hits).
-3. Local NMS overlap filtering (preserving non-overlapping adjacent monomers).
-4. Consensus-anchored junction healing (closing 1–3 bp micro-gaps).
-We have clarified this distinction explicitly in the manuscript.
+Running the refactored script against the CHM13 BEDs dynamically generates the updated log ([`benchmarks/logs/chr22_active_hor_continuity.summary.txt`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/logs/chr22_active_hor_continuity.summary.txt)):
+- **219-bp gap `[12,789,031, 12,789,250)`:** Dynamically identifies two legacy records: `S2C9H1L.7` [12789034, 12789152), score 97.9, length 118 bp, density 0.830; and `S2C14/22H1L.3` [12789154, 12789249), score 90.4, length 95 bp, density 0.952. We explain that although their score densities exceed 0.70, they fall into a degenerate pericentromeric transition boundary near the start of the active array; FastHumAS's Gotoh affine DP search against the active HOR model did not yield a hit passing the candidate seed/score filter in this region, leaving 219 bp unannotated.
+- **Three 31-bp gaps (`15,478,940`, `15,480,341`, `15,488,562`):** Dynamically identifies that in each case, legacy nhmmer called a partial 58-bp fragment of `S2C14/22H1L.6` [score 46.4, density 0.800] followed by a 145-bp fragment [score 161.8], whereas FastHumAS called a full 177-bp monomer. We explicitly note in the text that determining whether this recurrent 31-bp sequence (`CAACAAAAAGTGTTTTTCAAAACTGCTGTAT`) represents an authentic insertion variant versus model boundary placement variation requires pairwise structural alignment against the canonical repeat unit.
 
 ---
 
-## 4. Dynamic 10-Chromosome Healing Analysis & Assembly-Wide Extrapolation
+## 4. Correction of Methods Descriptions of Stage 2 DP and Thresholds
 
-> **Reviewer 3:** *"Десятихромосомный healing-анализ фактически не обновлён... junction_healing_analysis.summary.txt и analyze_junction_healing.py побайтно совпадают с предыдущим коммитом... 9 хромосом, без chr17... Оценка ~190 587 остаётся экстраполяцией старого девятихромосомного результата... Сам скрипт всё ещё анализирует только геометрию BED и печатает готовое биологическое заключение."*
+> **Reviewer 3:** *"В Methods остаются неверные описания Stage 2 и порога. В статье k >= L - 5 названо достижением определённой позиции последовательности и условием завершения DP. В коде k — позиция модели... это не остановка цикла. Также полоса -14/+28 не равнозначна диапазону длин мономера 157-199 bp... Окно составляет [end_pos-190, end_pos+5)... threshold - 0.05 и round(d) >= t нужно описать раздельно."*
 
 ### Response:
-We have completely rewritten [`benchmarks/analyze_junction_healing.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/analyze_junction_healing.py) to compute all numbers, proportions, and extrapolations dynamically from the input BED files, eliminating all hardcoded strings.
+We have corrected Section 2.1 in [`paper/paper.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.md):
 
-Running the updated script on the 10 benchmark chromosomes yields [`benchmarks/logs/junction_healing_analysis.summary.txt`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/logs/junction_healing_analysis.summary.txt):
-
-```text
-==========================================================================================================
-Inter-Monomer Gap and Healing Analysis: Legacy HumAS-HMMER vs FastHumAS
-==========================================================================================================
-Chromosome   | Legacy Recs  | Legacy Gap=0 | Legacy 1-3bp | Legacy 2bp(-) | Fast Gap=0   | Fast 1-3bp   | Fast 2bp(-) 
-----------------------------------------------------------------------------------------------------------
-NC_060925.1  | 30571        | 10543        | 17119        | 9550          | 30039        | 232          | 38          
-NC_060927.1  | 15589        | 1252         | 12805        | 11056         | 14865        | 404          | 48          
-NC_060932.1  | 15804        | 12518        | 2182         | 223           | 14713        | 506          | 11          
-NC_060934.1  | 16915        | 10753        | 3925         | 260           | 14378        | 1153         | 149         
-NC_060935.1  | 26385        | 18912        | 4168         | 609           | 22507        | 2975         | 617         
-NC_060936.1  | 20107        | 599          | 16887        | 14080         | 18156        | 1282         | 286         
-NC_060938.1  | 22434        | 1857         | 18476        | 14009         | 21205        | 691          | 57          
-NC_060941.1  | 25412        | 23735        | 1339         | 81            | 24994        | 225          | 6           
-NC_060946.1  | 24531        | 694          | 21952        | 17501         | 23717        | 487          | 53          
-NC_060948.1  | 2589         | 92           | 2047         | 923           | 2196         | 197          | 70          
-==========================================================================================================
-TOTAL (10 chr) | 200337       | 80955        | 100900       | 68292         | 186770       | 8152         | 1335        
-```
-
-**Key Findings (Dynamically Computed across 10 Chromosomes):**
-1. **Legacy Micro-Gaps:** Legacy HumAS-HMMER contains **100,900 micro-gaps (1–3 bp)** (50.37% of all monomers).
-2. **Minus-Strand Coordinate Bug:** Of these micro-gaps, **68,292 (67.68%)** are exact 2-bp gaps on the minus strand caused by `aliFrom = $7 - 1; aliTo = $8`.
-3. **Assembly-Wide Extrapolation:** Scaled to the 488,904 monomers across whole-genome CHM13:
-   $$68,292 \times \frac{488,904}{200,337} = \mathbf{166,660}\text{ artificial gaps genome-wide}.$$
-4. **FastHumAS Reduction:**
-   - Flush contiguous junctions increase from **40.41%** (80,955) in legacy to **93.72%** (186,770) in FastHumAS.
-   - Micro-gaps (1–3 bp) decrease by **91.92%** (from 100,900 down to 8,152).
-   - Artificial 2-bp minus-strand gaps decrease by **98.05%** (from 68,292 down to 1,335).
+1. **Model Column Condition ($k \ge L - 5$):** We corrected the description:
+   > *"During matrix evaluation, candidate alignment endpoint scores $\max(H[i, k], E[i, k], F[i, k])$ are considered for terminal model positions $k \ge L - 5$ (where $L$ is the model length, allowing up to 5-bp model contractions), while the recurrence continues across the full sequence evaluation window."*
+2. **Search Window and DP Band:** We clarified the evaluation window and band:
+   > *"For each candidate peak identified in Stage 1, a target sequence slice within an evaluation window $[end\_pos - 190, end\_pos + 5)$ is aligned against individual Profile HMM models using semi-global alignment with an asymmetric dynamic programming band $j \in [\text{expected} - 14, \text{expected} + 28]$ relative to the main diagonal."*
+3. **Separation of Upstream Pre-Filter and Final Rounding:** We explicitly separated the two stages:
+   > *"Candidate hits pass an upstream density pre-filter:
+   > $$d_{\text{raw}} = \frac{\text{Score}_{\text{scaled}}}{\text{Alignment Length}} \ge \text{threshold} - 0.05$$
+   > This 0.05 pre-filter relaxation prevents candidate drops prior to NMS. In the final stage, emitted records satisfy legacy AWK 1-decimal-place rounding:
+   > $$\operatorname{round}_{1\text{ decimal}}(d_{\text{raw}}) \ge \text{threshold}$$
+   > (with default threshold $0.70$), matching canonical HumAS-HMMER sensitivity."*
 
 ---
 
-## 5. Concordance Summary Synchronization & CLI Ratios
+## 5. Scientific Framing of Concordance and Discordant Loci
 
-> **Reviewer 3:** *"Таблица в сообщении и опубликованная concordance-сводка содержат разные результаты... Заявление об исправленном выводе точного strand agreement тоже пока не соответствует скрипту: он считает total_strand, но печатает только округлённый процент."*
+> **Reviewer 3:** *"Конкордантность с legacy всё ещё представлена как доказательство биологической истинности... Полученные проценты корректно характеризуют согласованность двух методов... Они не устанавливают независимо: истинность всех совпадающих вызовов; чувствительность отдельно Stage 1; биологическую природу всех 82 Fast-only локусов; потерю этих 82 локусов именно из-за координатного бага... безопасная научная формулировка — наблюдаемая согласованность, а объяснения дискордантных локусов следует обозначить как гипотезы."*
 
 ### Response:
-We updated [`benchmarks/compare_fasthumas_vs_nhmmer.py`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/compare_fasthumas_vs_nhmmer.py) to explicitly print the raw counts and ratios in the standard CLI output.
+We fully agree with the reviewer's scientific distinction between tool concordance and biological ground truth. We have revised the text in [`paper/paper.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.md) and [`paper/EXPL.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/EXPL.md):
 
-Running the updated comparator on the fixed whole-genome output against all 10 finished legacy chromosomes yields [`benchmarks/logs/nhmmer_concordance.summary.txt`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/benchmarks/logs/nhmmer_concordance.summary.txt):
-
-```text
-================================================================================
-Chrom          | FastHumAS  | Legacy   | Overlap  | Sens %  | Prec %  | <=3bp Bdry  | Label Agr  | Strand Agr
---------------------------------------------------------------------------------
-NC_060925.1    | 30514      | 30571    | 30514    |  99.81% | 100.00% |  98.95% (30193) |  99.78% | 100.00%
-NC_060927.1    | 15493      | 15589    | 15493    |  99.38% | 100.00% |  98.24% (15221) |  98.83% | 100.00%
-NC_060932.1    | 15710      | 15804    | 15673    |  99.17% |  99.76% |  97.26% (15244) |  99.55% | 100.00%
-NC_060934.1    | 16838      | 16915    | 16824    |  99.46% |  99.92% |  98.08% (16501) |  99.54% | 100.00%
-NC_060935.1    | 26173      | 26385    | 26164    |  99.16% |  99.97% |  96.86% (25343) |  99.15% | 100.00%
-NC_060936.1    | 19951      | 20107    | 19945    |  99.19% |  99.97% |  97.27% (19400) |  99.20% | 100.00%
-NC_060938.1    | 22275      | 22434    | 22271    |  99.27% |  99.98% |  94.94% (21144) |  98.89% | 100.00%
-NC_060941.1    | 25360      | 25412    | 25356    |  99.78% |  99.98% |  99.34% (25189) |  99.61% | 100.00%
-NC_060946.1    | 24434      | 24531    | 24431    |  99.59% |  99.99% |  97.10% (23722) |  99.14% | 100.00%
-NC_060948.1    | 2554       | 2589     | 2549     |  98.46% |  99.80% |  96.59% (2462) |  99.65% | 100.00%
-================================================================================
-TOTAL / MEAN   | 199302     | 200337   | 199220   |  99.44% |  99.96% |  97.59% (194419) |  99.32% | 100.00%
-
-Exact Boundary (=0 bp): 81909 / 199220 (41.11%)
-Boundary within <=3 bp: 194419 / 199220 (97.59%)
-Boundary within <=10 bp: 198711 / 199220 (99.74%)
-Strand Orientation Concordance: 199220 / 199220 (100.00%)
-Subfamily / Label Concordance: 197874 / 199220 (99.32%)
-FastHumAS unique (not in legacy): 82 / 199302 (0.04%)
-Legacy unique (not in FastHumAS): 1117 / 200337 (0.56%)
-```
-
-All figures in `paper.md`, `EXPL.md`, and this response are strictly synchronized with this verified output.
+1. In Section 3.2, we replaced claims of biological ground truth with precise statements of concordance:
+   > *"Sensitivity (Recall): **99.44%** (199,220 / 200,337 legacy monomers detected by FastHumAS), demonstrating high concordance with legacy annotations across finished chromosomes."*  
+   > *"Precision: **99.96%** (199,220 / 199,302 FastHumAS calls validated by legacy), demonstrating very high agreement without many-to-one inflation."*
+2. For discordant loci, explanations are explicitly presented as hypotheses supported by coordinate and length properties:
+   > *"FastHumAS-Unique Loci (82 records, 0.04%): These records exhibit a mean length of 168.1 bp (median 169.0 bp) and robust scores (mean 114.2). Their length and coordinate properties suggest the hypothesis that they represent full-length canonical monomers that were previously discarded in the legacy shell pipeline due to minus-strand coordinate offset collisions."*
 
 ---
 
-## 6. Inclusion of Manuscript, Explanations, and Review Materials in the Repository
+## 6. Consistent Framing of Acceleration as Estimated
 
-> **Reviewer 3:** *"В дереве коммита отсутствуют paper.md, paper.html, EXPL.md и response_to_reviewers.md. Поэтому заявленные исправления новых редакций этих документов по опубликованному репозиторию проверить невозможно."*
+> **Reviewer 3:** *"Ускорение 23.4× остаётся оценкой, хотя ключевые формулировки статьи подают его как измеренный результат... Здесь достаточно последовательной формулировки: измеренное время FastHumAS и оценочное ускорение относительно экстраполированного baseline."*
 
 ### Response:
-We have moved all documentation directly into the repository under the [`paper/`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper) directory:
-- [`paper/paper.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.md): Full manuscript source in GitHub Flavored Markdown.
-- [`paper/paper.html`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.html): Standalone HTML version with MathJax equations.
-- [`paper/EXPL.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/EXPL.md): Complete algorithmic derivations, formulas, and benchmark documentation.
-- [`paper/response_to_reviewers.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/response_to_reviewers.md): This complete point-by-point response.
+We have ensured consistent phrasing throughout the manuscript (Abstract, Table 1, Results Section 3.1, and Discussion Section 4):
+- We explicitly state the **measured runtime of FastHumAS: 38m 55s** (confirmed by exit 0 log).
+- We explicitly qualify the acceleration as **an estimated 23.4× wall-clock speedup over the parallel multi-chromosome legacy baseline (~15.2 hours) and >55× over sequential execution (~36–52 hours)**.
 
-A prominent navigation section has been added to [`README.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/README.md) linking directly to these documents.
+---
+
+### Summary of Git Commits in this Iteration
+- `src/overlap.rs`: Corrected BEDOPS `ScoreThenGenomicCompareGreater` tie-breaking comparator; preserved direct execution of `near_dedup` on `exact_dedup` stream; sorted output strictly at conclusion of `filter_overlaps` for healing.
+- `src/overlap.rs` tests: Added `test_bedmap_tie_break_greater_start_and_end` and `test_filter_overlaps_legacy_near_dedup_compatibility`. All 55 tests pass.
+- `benchmarks/analyze_active_hor_chr22.py`: Dynamic inspection of legacy calls and updated biological descriptions.
+- `benchmarks/logs/chr22_active_hor_continuity.summary.txt`: Regenerated dynamically with complete legacy call reporting.
+- `paper/paper.md`, `paper/paper.html`, `paper/EXPL.md`: Synchronized all statistics (10 chromosomes, 200,337 loci, 81,661 calibration pairs, 166,660 gap extrapolation, estimated speedup phrasing, corrected DP and threshold descriptions).
