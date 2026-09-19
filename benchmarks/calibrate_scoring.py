@@ -63,6 +63,9 @@ def main():
             k = (chrom, l["start"], l["end"], l["strand"])
             if k in f_dict:
                 f = f_dict[k]
+                # Require model name agreement for precise profile calibration
+                if l["name"] != f["name"]:
+                    continue
                 raw_gotoh = f["score"] / 0.85
                 ratio = l["score"] / raw_gotoh
                 all_pairs.append({
@@ -85,8 +88,8 @@ def main():
     test_r = np.array(test_ratios)
 
     print("================================================================================")
-    print("FastHumAS Gotoh DP vs HMMER Bit Score Calibration")
-    print(f"Total evaluated exact-boundary monomers: {len(all_pairs)}")
+    print("FastHumAS Gotoh DP vs HMMER Bit Score Calibration (Name-Matched)")
+    print(f"Total evaluated exact-boundary, model-matched monomers: {len(all_pairs)}")
     print("================================================================================")
     print(f"Training set (chr1, chr3, chr8): n = {len(train_r)}")
     print(f"  Mean ratio (HMMER / raw Gotoh): {train_r.mean():.4f} +/- {train_r.std():.4f} (SD)")
@@ -101,6 +104,21 @@ def main():
     print(f"  Median ratio:                  {np.median(test_r):.4f}")
     print(f"  Interquartile Range (IQR):     [{np.percentile(test_r, 25):.4f}, {np.percentile(test_r, 75):.4f}]")
     print(f"  95% empirical range:           [{np.percentile(test_r, 2.5):.4f}, {np.percentile(test_r, 97.5):.4f}]")
+
+    # Stratified analysis by score range across all pairs
+    all_hmmer = np.array([p["hmmer_score"] for p in all_pairs])
+    all_r = np.array([p["ratio"] for p in all_pairs])
+    high_mask = all_hmmer >= 150.0
+    mid_mask = (all_hmmer >= 100.0) & (all_hmmer < 150.0)
+    low_mask = all_hmmer < 100.0
+
+    print("\nScore-Stratified Calibration Analysis (All Chromosomes):")
+    if np.any(high_mask):
+        print(f"  High score (>= 150 bits, n = {np.sum(high_mask)}): Mean ratio = {all_r[high_mask].mean():.4f} +/- {all_r[high_mask].std():.4f} (Median = {np.median(all_r[high_mask]):.4f})")
+    if np.any(mid_mask):
+        print(f"  Mid score  (100–150 bits, n = {np.sum(mid_mask)}): Mean ratio = {all_r[mid_mask].mean():.4f} +/- {all_r[mid_mask].std():.4f} (Median = {np.median(all_r[mid_mask]):.4f})")
+    if np.any(low_mask):
+        print(f"  Low score  (< 100 bits, n = {np.sum(low_mask)}):   Mean ratio = {all_r[low_mask].mean():.4f} +/- {all_r[low_mask].std():.4f} (Median = {np.median(all_r[low_mask]):.4f})")
 
     if sample_out_path and all_pairs:
         # Write 5000 sampled rows for reviewer inspection

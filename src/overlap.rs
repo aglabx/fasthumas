@@ -3,50 +3,56 @@ use std::collections::HashSet;
 
 /// Stage 1: bedmap --max-element --fraction-either 0.1
 ///
-/// Groups overlapping intervals (>=10% overlap of either element) and keeps the
-/// highest-scoring element from each group.
-/// Input MUST be sorted by chrom + start.
+/// For each reference interval, finds all overlapping intervals (>=10% overlap
+/// of either element) and maps the reference interval to the highest-scoring element
+/// among those overlapping intervals. Unlike transitive clustering, this performs
+/// local non-maximum suppression, ensuring that non-overlapping intervals linked
+/// only through an intermediate lower-scoring element are not dropped.
+/// Input MUST be sorted by chrom + start + end.
 pub fn bedmap_max_element(records: &[BedRecord]) -> Vec<BedRecord> {
     if records.is_empty() {
         return vec![];
     }
 
-    let mut result: Vec<BedRecord> = Vec::new();
+    let mut result: Vec<BedRecord> = Vec::with_capacity(records.len());
+    let mut chrom_start = 0;
 
-    // Sweep-line: for each record, check whether it overlaps any record in the
-    // current cluster. If it does, join the cluster; otherwise emit the
-    // cluster's max-scoring element and start a new one.
-    let mut cluster: Vec<BedRecord> = vec![records[0].clone()];
-
-    for rec in records.iter().skip(1) {
-        let overlaps = cluster
-            .iter()
-            .any(|c| c.chrom == rec.chrom && has_reciprocal_overlap(c, rec, 0.1));
-
-        if overlaps {
-            cluster.push(rec.clone());
-        } else {
-            if let Some(best) = max_by_score(&cluster) {
-                result.push(best.clone());
-            }
-            cluster.clear();
-            cluster.push(rec.clone());
+    while chrom_start < records.len() {
+        let current_chrom = &records[chrom_start].chrom;
+        let mut chrom_end = chrom_start + 1;
+        while chrom_end < records.len() && &records[chrom_end].chrom == current_chrom {
+            chrom_end += 1;
         }
-    }
 
-    if let Some(best) = max_by_score(&cluster) {
-        result.push(best.clone());
+        let chrom_records = &records[chrom_start..chrom_end];
+        let max_len = chrom_records.iter().map(|r| r.length()).max().unwrap_or(0);
+        let n = chrom_records.len();
+
+        for i in 0..n {
+            let rec_i = &chrom_records[i];
+            let lower_bound = rec_i.start.saturating_sub(max_len);
+            let left = chrom_records[..i].partition_point(|r| r.start < lower_bound);
+            let right = i + chrom_records[i..].partition_point(|r| r.start < rec_i.end);
+
+            let mut best = rec_i;
+            for cand in &chrom_records[left..right] {
+                if has_reciprocal_overlap(rec_i, cand, 0.1) {
+                    let is_better = cand.score > best.score
+                        || ((cand.score - best.score).abs() < 1e-6
+                            && (cand.start > best.start
+                                || (cand.start == best.start && cand.end > best.end)));
+                    if is_better {
+                        best = cand;
+                    }
+                }
+            }
+            result.push(best.clone());
+        }
+
+        chrom_start = chrom_end;
     }
 
     result
-}
-
-fn max_by_score(records: &[BedRecord]) -> Option<&BedRecord> {
-    records.iter().max_by(|a, b| {
-        a.score
-            .partial_cmp(&b.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    })
 }
 
 /// Check if two intervals overlap by at least `frac` of *either* element,
@@ -154,9 +160,39 @@ mod tests {
             make_rec("chr1", 0, 100, "a", 50.0),
             make_rec("chr1", 10, 110, "b", 80.0),
         ];
-        let result = bedmap_max_element(&recs);
+        let stage1 = bedmap_max_element(&recs);
+        assert_eq!(stage1.len(), 2);
+        assert_eq!(stage1[0].name, "b");
+        assert_eq!(stage1[1].name, "b");
+
+        let result = filter_overlaps(&recs);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name, "b");
+    }
+
+    #[test]
+    fn test_bedmap_reviewer_counterexample() {
+        // Reviewer counterexample:
+        // A: [0, 171), score 200
+        // B: [150, 321), score 150
+        // C: [300, 471), score 190
+        // Transitive clustering would incorrectly merge A, B, C into one cluster and drop C.
+        // True BEDOPS bedmap --max-element + dedup outputs both A and C, dropping only B.
+        let recs = vec![
+            make_rec("chr1", 0, 171, "A", 200.0),
+            make_rec("chr1", 150, 321, "B", 150.0),
+            make_rec("chr1", 300, 471, "C", 190.0),
+        ];
+        let stage1 = bedmap_max_element(&recs);
+        assert_eq!(stage1.len(), 3);
+        assert_eq!(stage1[0].name, "A");
+        assert_eq!(stage1[1].name, "A");
+        assert_eq!(stage1[2].name, "C");
+
+        let result = filter_overlaps(&recs);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "A");
+        assert_eq!(result[1].name, "C");
     }
 
     #[test]

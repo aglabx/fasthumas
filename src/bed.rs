@@ -58,7 +58,12 @@ impl BedRecord {
 /// original it cannot interleave records from different sequences (which the
 /// order-dependent filtering stages downstream rely on).
 pub fn sort_bed_records(records: &mut [BedRecord]) {
-    records.sort_by(|a, b| a.chrom.cmp(&b.chrom).then(a.start.cmp(&b.start)));
+    records.sort_by(|a, b| {
+        a.chrom
+            .cmp(&b.chrom)
+            .then(a.start.cmp(&b.start))
+            .then(a.end.cmp(&b.end))
+    });
 }
 
 #[cfg(test)]

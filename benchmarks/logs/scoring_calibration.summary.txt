@@ -1,19 +1,25 @@
 ================================================================================
-FastHumAS Gotoh DP vs HMMER Bit Score Calibration
-Total evaluated exact-boundary monomers: 58183
+FastHumAS Gotoh DP vs HMMER Bit Score Calibration (Name-Matched)
+Total evaluated exact-boundary, model-matched monomers: 81650
 ================================================================================
-Training set (chr1, chr3, chr8): n = 23527
+Training set (chr1, chr3, chr8): n = 23506
   Mean ratio (HMMER / raw Gotoh): 0.8495 +/- 0.0074 (SD)
   Standard Error of Mean (SEM):  0.000048
   Median ratio:                  0.8504
   Interquartile Range (IQR):     [0.8469, 0.8534]
   95% empirical range:           [0.8305, 0.8599]
 
-Independent Validation set (chr10, 11, 12, 14, 22, Y): n = 34656
-  Mean ratio (HMMER / raw Gotoh): 0.8483 +/- 0.0085 (SD)
-  Standard Error of Mean (SEM):  0.000046
+Independent Validation set (chr10, 11, 12, 14, 17, 22, Y): n = 58144
+  Mean ratio (HMMER / raw Gotoh): 0.8484 +/- 0.0084 (SD)
+  Standard Error of Mean (SEM):  0.000035
   Median ratio:                  0.8500
   Interquartile Range (IQR):     [0.8461, 0.8535]
-  95% empirical range:           [0.8247, 0.8595]
+  95% empirical range:           [0.8250, 0.8595]
 
-Wrote 5,000 paired sample scores to /mnt/data/claude/benchmark_fasthumas/logs/paired_calibration_scores_sample.tsv
+Score-Stratified Calibration Analysis (All Chromosomes):
+  High score (>= 150 bits, n = 80331): Mean ratio = 0.8507 +/- 0.0065 (Median = 0.8517)
+  Mid score  (100–150 bits, n = 1319): Mean ratio = 0.8198 +/- 0.0128 (Median = 0.8210)
+  Low score  (< 100 bits, n = 0):     No exact-boundary model-matched monomers below 100 bits
+
+Wrote 5,000 paired sample scores to benchmarks/logs/paired_calibration_scores_sample.tsv
+
