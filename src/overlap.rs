@@ -113,7 +113,8 @@ pub fn near_dedup(records: &[BedRecord]) -> Vec<BedRecord> {
 
         if let Some((prev_chrom, prev_start, prev_end, prev_score, prev_length)) = prev {
             if prev_chrom == rec.chrom
-                && ((start - prev_start).abs() < 10 || (end - prev_end).abs() < 10)
+                && ((-10..10).contains(&(start - prev_start))
+                    || (-10..10).contains(&(end - prev_end)))
             {
                 if (prev_score - rec.score).abs() < 0.01 {
                     // Same score: keep the longer interval.
@@ -253,6 +254,27 @@ mod tests {
         let result = near_dedup(&recs);
         assert_eq!(result.len(), 2);
         assert_eq!(result[1].chrom, "chr2");
+    }
+
+    #[test]
+    fn test_near_dedup_python_range_delta_negative_ten() {
+        // Reviewer counterexample:
+        // Python: start in range(prev_start - 10, prev_start + 10) or end in range(prev_end - 10, prev_end + 10)
+        // includes delta = -10 (prev - 10 <= x < prev + 10).
+        // X [0, 100) score 100
+        // R [80, 251) score 150
+        // S [100, 241) score 200
+        // S end (241) has delta 241 - 251 = -10 relative to R end (251).
+        // Original Python overlap_filter.py drops R and outputs only X and S.
+        let recs = vec![
+            make_rec("chr1", 0, 100, "X", 100.0),
+            make_rec("chr1", 80, 251, "R", 150.0),
+            make_rec("chr1", 100, 241, "S", 200.0),
+        ];
+        let result = near_dedup(&recs);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "X");
+        assert_eq!(result[1].name, "S");
     }
 
     #[test]

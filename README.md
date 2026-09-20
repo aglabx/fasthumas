@@ -130,8 +130,7 @@ Because the two sides of a junction own only the bases in the gap between them, 
 
 - **In-memory execution:** Direct Plan7 HMM parser and in-memory bounded banded DP alignment; zero temporary disk files.
 - **Deterministic colors:** The AWK `getColor()` iterated with `for (i in cnA)` whose order is undefined in POSIX awk. FastHumAS matches rules deterministically in table source order.
-- **Sequence boundary reset:** `overlap_filter.py` carried state across chromosome boundaries, which allowed the end of one chromosome to suppress hits at the start of the next. FastHumAS strictly scopes near-dedup to individual sequences.
-- **Symmetric overlap window:** `overlap_filter.py` used `start in range(prev_start-10, prev_start+10)` (window `[-10, +9]`). FastHumAS uses symmetric `abs(delta) < 10`.
+- **Sequence boundary reset & strict parity:** `overlap_filter.py` carried state across chromosome boundaries, which allowed the end of one chromosome to suppress hits at the start of the next; FastHumAS strictly scopes near-dedup to individual sequences. For coordinate proximity, FastHumAS matches Python's half-open `range(prev - 10, prev + 10)` ($[-10, +10)$) window for exact behavioral parity.
 
 ---
 

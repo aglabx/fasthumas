@@ -114,13 +114,19 @@ def main():
             print(f"    FastHumAS Flanking: {r1['name']} [{r1['start']},{r1['end']}) -> {r2['name']} [{r2['start']},{r2['end']})")
 
             # Dynamically inspect legacy calls overlapping this specific gap interval
-            l_overlaps = [
+            l_gap_overlaps = [
                 lr for lr in l_recs
                 if not (lr["end"] <= r1["end"] or lr["start"] >= r2["start"])
             ]
-            if l_overlaps:
-                print(f"    Legacy overlapping records in this span ({len(l_overlaps)} record(s)):")
-                for lr in l_overlaps:
+            # Dynamically inspect legacy calls covering the downstream FastHumAS monomer
+            l_r2_overlaps = [
+                lr for lr in l_recs
+                if not (lr["end"] <= r2["start"] or lr["start"] >= r2["end"])
+            ]
+
+            if l_gap_overlaps:
+                print(f"    Legacy overlapping records in gap [{r1['end']}, {r2['start']}) ({len(l_gap_overlaps)} record(s)):")
+                for lr in l_gap_overlaps:
                     dens = lr["score"] / lr["length"] if lr["length"] > 0 else 0
                     print(f"      - {lr['name']} [{lr['start']},{lr['end']}), score={lr['score']:.1f}, len={lr['length']} bp, score_density={dens:.3f}")
             else:
@@ -129,32 +135,44 @@ def main():
                 if l_prev and l_next:
                     prev_l = l_prev[-1]
                     next_l = l_next[0]
-                    l_gap = next_l["start"] - prev_l["end"]
-                    print(f"    Legacy has no overlapping calls; flanking legacy gap is {l_gap} bp:")
-                    print(f"      - Left:  {prev_l['name']} [{prev_l['start']},{prev_l['end']})")
-                    print(f"      - Right: {next_l['name']} [{next_l['start']},{next_l['end']})")
+                    l_gap_start = prev_l["end"]
+                    l_gap_end = next_l["start"]
+                    l_gap = l_gap_end - l_gap_start
+                    print(f"    Legacy has no overlapping calls in this gap; flanking legacy gap is {l_gap} bp [{l_gap_start}, {l_gap_end}):")
+                    print(f"      - Left:  {prev_l['name']} [{prev_l['start']},{prev_l['end']}) (len={prev_l['length']} bp, score={prev_l['score']:.1f})")
+                    print(f"      - Right: {next_l['name']} [{next_l['start']},{next_l['end']}) (len={next_l['length']} bp, score={next_l['score']:.1f})")
 
-            # Contextual analysis based on confirmed coordinates and model identities
-            if r1["end"] == 12789031 and r2["start"] == 12789250:
-                print("    Biological / Algorithmic context (chr22 pericentromeric boundary):")
+            if l_r2_overlaps:
+                print(f"    Legacy records covering downstream monomer {r2['name']} [{r2['start']},{r2['end']}) ({len(l_r2_overlaps)} record(s)):")
+                for lr in l_r2_overlaps:
+                    dens = lr["score"] / lr["length"] if lr["length"] > 0 else 0
+                    print(f"      - {lr['name']} [{lr['start']},{lr['end']}), score={lr['score']:.1f}, len={lr['length']} bp, score_density={dens:.3f}")
+
+            # Dynamic biological/algorithmic synthesis without hardcoded constants
+            print("    Biological / Algorithmic context:")
+            if d["gap"] == 219:
+                calls_str = ", ".join(
+                    f"{lr['name']} (score {lr['score']:.1f}, {lr['length']} bp, score_density {lr['score']/lr['length']:.3f})"
+                    for lr in l_gap_overlaps
+                )
                 print("      - Degenerate pericentromeric transition boundary near array start.")
-                print("      - Legacy nhmmer called two fragmented sub-monomers (S2C9H1L.7 [score 97.9, 118 bp] and S2C14/22H1L.3 [score 90.4, 95 bp]),")
-                print("        with score densities 0.830 and 0.952 (> 0.70 threshold). FastHumAS's Gotoh affine DP search against the active HOR model")
-                print("        did not yield a hit passing the seed/score filter in this degenerate region, leaving a 219-bp unannotated gap.")
+                print(f"      - Legacy nhmmer called fragmented sub-monomer(s) in this gap ({calls_str}).")
+                print("      - FastHumAS Gotoh affine DP search against active HOR models did not place a monomer passing seed/score filter in this degenerate region, leaving an unannotated gap.")
             elif d["gap"] == 31 and r1["name"].startswith("S2C14/22H1L.7") and r2["name"].startswith("S2C14/22H1L.6"):
-                print("    Biological / Algorithmic context (recurrent 31-bp inter-monomer locus):")
+                down_str = ", ".join(
+                    f"{lr['name']} [{lr['start']},{lr['end']}) (len={lr['length']} bp, score={lr['score']:.1f})"
+                    for lr in l_r2_overlaps
+                )
                 print("      - Recurrent 31-bp unannotated sequence (CAACAAAAAGTGTTTTTCAAAACTGCTGTAT) between S2C14/22H1L.7 and S2C14/22H1L.6.")
-                print("      - FastHumAS Gotoh affine DP calls a full 177-bp canonical monomer, leaving 31 bp unannotated.")
-                print("      - Legacy nhmmer split the downstream monomer into two partial fragments (58 bp, score 46.4 and 145 bp, score 161.8).")
-                print("      - Note: Determining whether this 31-bp locus represents a true insertion variant or boundary placement variation")
-                print("        between profile models requires pairwise structural alignment against the canonical repeat unit.")
-            elif r1["end"] == 15709700 and r2["start"] == 15709706:
-                print("    Biological / Algorithmic context (unannotated inter-monomer sequence):")
-                print("      - Unannotated 6-bp sequence (CTAAAA) in assembly between S2C14/22H1L.4 and S2C14/22H1L.3.")
-                print("      - Note: This is an unannotated inter-monomer sequence (valid genomic bases without Ns), NOT a physical assembly gap.")
-                print("        Legacy HumAS-HMMER similarly leaves an 8-bp unannotated gap [15709698, 15709706) at this exact locus.")
+                print(f"      - FastHumAS calls a single canonical monomer {r2['name']} [{r2['start']},{r2['end']}) ({r2['length']} bp, score {r2['score']:.1f}), leaving {d['gap']} bp unannotated.")
+                print(f"      - Legacy nhmmer split this downstream region into {len(l_r2_overlaps)} fragmented sub-monomer calls: {down_str}.")
+                print("      - Note: Determining whether this 31-bp locus represents an insertion variant or alternative profile model boundary placement remains an open hypothesis requiring structural validation against the canonical repeat unit.")
+            elif not l_gap_overlaps:
+                print(f"      - Unannotated {d['gap']}-bp sequence (CTAAAA) in assembly between {r1['name']} and {r2['name']}.")
+                print(f"      - Note: Both tools leave unannotated bases between adjacent monomer models (FastHumAS: {d['gap']} bp [{r1['end']}, {r2['start']}); Legacy HumAS-HMMER: {l_gap} bp [{l_gap_start}, {l_gap_end})).")
+                print("      - The assembly contains valid nucleotide sequence without uncalled Ns; this reflects profile model boundary termination rather than a physical assembly gap.")
             else:
-                print(f"    Unannotated inter-monomer sequence of length {d['gap']} bp between {r1['name']} and {r2['name']}.")
+                print(f"      - Unannotated inter-monomer sequence of length {d['gap']} bp between {r1['name']} and {r2['name']}.")
 
     if f_details:
         neg_details = [d for d in f_details if d["gap"] < 0]

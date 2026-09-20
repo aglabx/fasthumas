@@ -145,18 +145,18 @@ represents the higher genomic coordinate on the minus strand,
 subtracting 1 from <code>$7</code> placed the adjustment on the wrong
 boundary while leaving <code>$8</code> unadjusted. Consequently, every
 minus-strand annotation was shifted 1 bp to the right and shortened by 2
-bp, distorting length distributions and artificially inducing
-~190,000–200,000 2-bp gaps between flush minus-strand monomers across
-the human genome. 3. <strong>Boundary Trimming and Heuristic
-Micro-Gaps:</strong> Profile HMM local alignments drop terminal residues
-whose posterior alignment probability falls below heuristic cutoffs due
-to register ambiguity at tandem monomer junctions. This leaves
-artificial 1–3 bp unannotated “micro-gaps” between monomers that are
-contiguous in the underlying sequence. 4. <strong>Telomeric Alphabet
-Crashes:</strong> Older HMMER versions (≤3.3.2) attempt to infer target
-alphabet from leading residues and crash on long telomeric repeat arrays
-(<code>TAACCCTAACCC...</code>) with
-<code>Invalid alphabet type in target for nhmmer</code>.</p>
+bp, distorting length distributions and artificially inducing ~166,660
+2-bp gaps between flush minus-strand monomers across the human genome
+(extrapolated from 68,292 measured across 10 finished chromosomes). 3.
+<strong>Boundary Trimming and Heuristic Micro-Gaps:</strong> Profile HMM
+local alignments drop terminal residues whose posterior alignment
+probability falls below heuristic cutoffs due to register ambiguity at
+tandem monomer junctions. This leaves artificial 1–3 bp unannotated
+“micro-gaps” between monomers that are contiguous in the underlying
+sequence. 4. <strong>Telomeric Alphabet Crashes:</strong> Older HMMER
+versions (≤3.3.2) attempt to infer target alphabet from leading residues
+and crash on long telomeric repeat arrays (<code>TAACCCTAACCC...</code>)
+with <code>Invalid alphabet type in target for nhmmer</code>.</p>
 <p>To address these limitations, we developed
 <strong>FastHumAS</strong>, an in-memory, pure-Rust annotation engine
 for scalable centromeric alpha-satellite classification.</p>
@@ -226,7 +226,7 @@ class="math inline">\(0.8504\)</span> (IQR: 0.8469–0.8534). -
 chr22, chrY; <span class="math inline">\(n = 58,155\)</span>):</strong>
 Mean ratio <span class="math inline">\(0.8505 \pm 0.0078\)</span> (SD),
 SEM <span class="math inline">\(0.000032\)</span>, Median <span
-class="math inline">\(0.8522\)</span> (IQR: 0.8471–0.8540). -
+class="math inline">\(0.8522\)</span> (IQR: 0.8478–0.8555). -
 <strong>Score Stratification:</strong> Among the evaluated
 exact-boundary calibration pairs, canonical high-scoring monomers (<span
 class="math inline">\(\ge 150\)</span> bits, representing 98.4% of
@@ -269,10 +269,11 @@ Deduplication (<code>exact_dedup</code>):</strong> Preserves the first
 occurrence of each unique BED9 record. 3. <strong>Near-Duplicate
 Suppression (<code>near_dedup</code>):</strong> Directly processes the
 deduplicated stream, sequentially eliminating records whose start or end
-coordinates lie within <span class="math inline">\(\pm 10\)</span> bp of
-an adjacent higher-scoring survivor. Finally, records are sorted in
-coordinate order prior to downstream junction healing without altering
-filtering membership.</p>
+coordinates lie within the half-open window <span
+class="math inline">\([-10, +10)\)</span> bp
+(<code>range(prev - 10, prev + 10)</code>) of an adjacent higher-scoring
+survivor. Finally, records are sorted in coordinate order prior to
+downstream junction healing without altering filtering membership.</p>
 <h3 id="corrected-minus-strand-coordinate-symmetry">2.2 Corrected
 Minus-Strand Coordinate Symmetry</h3>
 <p>Target sequences are scanned in both forward (<span
@@ -526,11 +527,12 @@ fragmented, partial sub-monomer alignments in degenerate pericentromeric
 boundaries near the <span class="math inline">\(0.70\)</span> score
 density threshold. 2. <strong>FastHumAS-Unique Loci (82 records,
 0.04%):</strong> These records exhibit a mean length of <strong>168.1
-bp</strong> (median 169.0 bp) and robust scores (mean 114.2). Their
-length and coordinate properties suggest the hypothesis that they
-represent full-length canonical monomers that were previously discarded
-in the legacy shell pipeline due to minus-strand coordinate offset
-collisions. 3. <strong>Gotoh DP Recurrence Discordance
+bp</strong> (median 169.0 bp) and robust scores (mean 114.2). While
+definitive biological validation of unannotated repeats requires
+orthogonal experimental and assembly verification, their canonical
+lengths and coordinate distributions support the hypothesis that they
+represent monomer calls excluded in the legacy pipeline by downstream
+coordinate collisions. 3. <strong>Gotoh DP Recurrence Discordance
 Analysis:</strong> Comparison of whole-genome CHM13 outputs before and
 after the affine gap recurrence fix confirmed that 99.976% of records
 (488,636 / 488,754) are strictly bit-identical. The 125 records formerly
@@ -585,7 +587,8 @@ between insertion variant versus model boundary placement requiring
 structural alignment against the canonical repeat unit; and (iii) an
 unannotated 6-bp sequence (<code>CTAAAA</code>,
 <code>15,709,700–15,709,706</code>) in the assembly sequence (where
-legacy similarly leaves an 8-bp gap). - <strong>Biological Interruption
+legacy similarly leaves an 8-bp unannotated gap
+<code>15,709,699–15,709,707</code>). - <strong>Biological Interruption
 Preservation:</strong> Across the whole genome, FastHumAS intentionally
 accepts boundary extensions only when supported by consensus or
 recurrence criteria (accepting 35.1% of candidate gap boundaries in HOR
@@ -611,15 +614,19 @@ disk usage.</p>
 biological fidelity. With <strong>99.44% sensitivity, 99.96% precision,
 and 100.00% strand agreement</strong> against the official HumAS-HMMER
 pipeline across 200,337 loci, FastHumAS serves as a direct, drop-in
-replacement for the T2T CenSat ecosystem. Discordance analysis reveals
-that FastHumAS filters out degraded, fragmented sub-monomers (mean
-length 105 bp) while capturing candidate canonical monomers (mean length
-168 bp) formerly lost to coordinate shifting bugs. Furthermore, by
-generating all four standard CenSat BED tracks with canonical 218-color
-palettes and offering a built-in <code>--legacy</code> verification
-mode, FastHumAS guarantees complete portability and backwards
-compatibility for ongoing diploid pangenome and primate comparative
-genomics consortia.</p>
+replacement for the T2T CenSat ecosystem. Discordance analysis indicates
+that FastHumAS omits degraded sub-monomer fragments (mean length 105 bp)
+near threshold boundaries while recovering candidate full-length
+monomers (mean length 168 bp) that were potentially excluded in legacy
+post-processing. Crucially, high concordance with legacy annotations
+demonstrates tool consistency across diverse centromeric architectures,
+while structural ground truth at unresolved micro-insertions and
+degenerate transitions will ultimately benefit from direct experimental
+and assembly-level validation. Furthermore, by generating all four
+standard CenSat BED tracks with canonical 218-color palettes and
+offering a built-in <code>--legacy</code> verification mode, FastHumAS
+guarantees complete portability and backwards compatibility for ongoing
+diploid pangenome and primate comparative genomics consortia.</p>
 <hr />
 <h2 id="ai-assisted-research-statement">AI-Assisted Research
 Statement</h2>

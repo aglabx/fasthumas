@@ -66,7 +66,7 @@ Why did `nhmmer` detect 1,117 loci that FastHumAS did not output?
 Why did FastHumAS detect 82 loci not present in the legacy output?
 - **Length Distribution:** Mean length is **168.1 bp** (median: 169.0 bp), matching canonical 171-bp monomer architecture.
 - **Score Distribution:** Mean score is **114.2** (range: 99.3–121.7).
-- **Biological Hypothesis:** Length and coordinate properties suggest the hypothesis that these represent **canonical monomers** that were discarded by the legacy pipeline due to minus-strand coordinate offset collisions during downstream `overlap_filter.py` execution.
+- **Biological Hypothesis:** Length and coordinate properties support the hypothesis that these loci represent **canonical monomer candidates** that were discarded by the legacy pipeline during downstream `overlap_filter.py` resolution due to minus-strand coordinate collision artifacts. Definitive biological validation of discordant loci remains an open hypothesis subject to orthogonal confirmation.
 
 ---
 
@@ -96,7 +96,7 @@ Local alignment drops terminal bases due to register ambiguity at monomer juncti
 - **Active Dense Arrays:** In the canonical active centromeric core of chromosome 22 (`NC_060946.1:12,788,180–15,711,065`, array `hor_22_9` / `S2C14/22H1L`, spanning 2.92 Mb with 17,145 monomers), **99.59% of junctions (17,073 / 17,144)** are resolved completely flush (gap = 0 bp), compared to **0.00% (0 / 17,150)** in legacy HumAS-HMMER. Only 65 micro-gaps, 5 gaps > 3 bp, and 1 overlap (-1 bp) remain. Investigation of the 5 gaps > 3 bp reveals:
   (i) a 219-bp unannotated gap at a degenerate pericentromeric boundary (`12,789,031–12,789,250`) where legacy called two sub-100-bit fragments (`S2C9H1L.7` [score 97.9, 118 bp] and `S2C14/22H1L.3` [score 90.4, 95 bp]);
   (ii) three identical recurrent 31-bp unannotated sequences (`CAACAAAAAGTGTTTTTCAAAACTGCTGTAT`) between monomers `.7` and `.6`, where FastHumAS calls full-length 177-bp monomers while legacy split monomer `.6` into two fragments; and
-  (iii) an unannotated 6-bp sequence (`CTAAAA`, `15,709,700–15,709,706`) in the assembly sequence (where legacy similarly leaves an 8-bp gap).
+  (iii) an unannotated 6-bp sequence (`CTAAAA`, `15,709,700–15,709,706`) in the assembly sequence (where legacy similarly leaves an 8-bp unannotated gap `15,709,699–15,709,707`).
 
 ---
 
@@ -113,7 +113,7 @@ We calibrated and validated this factor across **81,661 exact-boundary, model-ma
 - **Independent Validation Split (chr10, 11, 12, 14, 17, 22, Y; $n = 58,155$):**
   - Mean ratio: $0.8505 \pm 0.0078$ (Sample SD)
   - SEM: $0.000032$
-  - Median ratio: $0.8522$ (IQR: 0.8471–0.8540)
+  - Median ratio: $0.8522$ (IQR: 0.8478–0.8555)
   - 95% empirical range: $[0.8299, 0.8595]$
 
 ### Score Stratification & Null2 Dynamics
@@ -136,7 +136,7 @@ For canonical alpha-satellite monomers ($\ge 150$ bits, representing 98.4% of th
 FastHumAS strictly replicates the 3-stage overlap filtering pipeline of legacy HumAS-HMMER while guaranteeing coordinate order preservation for junction healing:
 1. **Local Non-Maximum Suppression (`bedmap --max-element --fraction-either 0.1`):** Maps each reference interval to the highest-scoring candidate among all intervals sharing $\ge 10\%$ overlap with either element. When candidate scores are identical, FastHumAS selects candidate elements matching BEDOPS `ScoreThenGenomicCompareGreater`: preferring higher start coordinate, then higher end coordinate, and for identical coordinates preserving the earliest candidate in `sort-bed` order `(chrom, start, end, name, strand)`.
 2. **Exact Deduplication (`exact_dedup`):** Eliminates duplicate records, matching legacy `awk '{if(!($0 in a)){a[$0]; print}}'`.
-3. **Near-Duplicate Suppression (`near_dedup`):** Resolves near-identical records within $\pm 10$ bp on the deduplicated stream, matching `overlap_filter.py`.
+3. **Near-Duplicate Suppression (`near_dedup`):** Directly processes the deduplicated stream, sequentially eliminating records whose start or end coordinates lie within the half-open window $[-10, +10)$ bp (`range(prev - 10, prev + 10)`) of an adjacent higher-scoring survivor.
 4. **Coordinate Order Restoration:** Coordinates are sorted prior to downstream junction healing without altering filtering membership, ensuring that `junction::candidates` evaluates all true adjacent monomer junctions along the chromosome.
 
 ---

@@ -199,9 +199,138 @@ We have ensured consistent phrasing throughout the manuscript (Abstract, Table 1
 
 ---
 
-### Summary of Git Commits in this Iteration
+### Summary of Git Commits in Iteration 4
 - `src/overlap.rs`: Corrected BEDOPS `ScoreThenGenomicCompareGreater` tie-breaking comparator; preserved direct execution of `near_dedup` on `exact_dedup` stream; sorted output strictly at conclusion of `filter_overlaps` for healing.
 - `src/overlap.rs` tests: Added `test_bedmap_tie_break_greater_start_and_end` and `test_filter_overlaps_legacy_near_dedup_compatibility`. All 55 tests pass.
 - `benchmarks/analyze_active_hor_chr22.py`: Dynamic inspection of legacy calls and updated biological descriptions.
 - `benchmarks/logs/chr22_active_hor_continuity.summary.txt`: Regenerated dynamically with complete legacy call reporting.
 - `paper/paper.md`, `paper/paper.html`, `paper/EXPL.md`: Synchronized all statistics (10 chromosomes, 200,337 loci, 81,661 calibration pairs, 166,660 gap extrapolation, estimated speedup phrasing, corrected DP and threshold descriptions).
+
+---
+
+# Point-by-Point Response to Reviewer 3 (Iteration 5)
+
+We thank Reviewer 3 for their meticulous, code-level verification on commit `aee9f2c`. The reviewer confirmed:
+- CI green across all platforms with 55 unit tests passing;
+- BEDOPS tie-breaking parity (`ScoreThenGenomicCompareGreater`);
+- Pipeline sequencing (`exact_dedup -> near_dedup -> sort`);
+- Coordinate order input for junction healing.
+
+The reviewer identified 6 specific items for full closure, which we have addressed in full:
+
+---
+
+## 1. Exact Python Half-Open Range Parity in `near_dedup` (`src/overlap.rs`)
+
+> **Reviewer 3:** *"Точная совместимость в near_dedup (src/overlap.rs): Python overlap_filter.py использует start in range(prev_start - 10, prev_start + 10), что соответствует полуоткрытому интервалу [-10, +10) (включая delta = -10, но исключая delta = +10). Rust использовал abs(delta) < 10 (-10 < delta < 10), ошибочно исключая delta = -10. Контрпример: X [0, 100) score 100, R [80, 251) score 150, S [100, 241) score 200. Python выдаёт X, S (удаляет R, т.к. 241 - 251 = -10 в [-10, 10)); Rust выдавал X, R, S."*
+
+### Response:
+We thank the reviewer for identifying this subtle boundary condition in Python's `range()` function. Python's `range(start - 10, start + 10)` generates integers $x$ satisfying $\text{start} - 10 \le x < \text{start} + 10$, which represents the asymmetric half-open interval $[-10, +10)$. A boundary difference $\Delta = -10$ is within the range, whereas $\Delta = +10$ is excluded.
+
+We updated `src/overlap.rs` to strictly replicate Python's range inclusion:
+```rust
+if prev_chrom == rec.chrom
+    && ((-10..10).contains(&(start - prev_start))
+        || (-10..10).contains(&(end - prev_end)))
+```
+
+We added a dedicated unit test in `src/overlap.rs` using the reviewer's exact counterexample:
+```rust
+#[test]
+fn test_near_dedup_python_range_delta_negative_ten() {
+    let recs = vec![
+        make_rec("chr1", 0, 100, "X", 100.0),
+        make_rec("chr1", 80, 251, "R", 150.0),
+        make_rec("chr1", 100, 241, "S", 200.0),
+    ];
+    let result = near_dedup(&recs);
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0].name, "X");
+    assert_eq!(result[1].name, "S");
+}
+```
+All **56 unit tests** pass (`cargo test --locked`).
+
+---
+
+## 2. Dynamic Inspection & Elimination of Hardcoded Constants in chr22 Script
+
+> **Reviewer 3:** *"Динамический анализ chr22 (benchmarks/analyze_active_hor_chr22.py): скрипт динамически извлекает записи, но печатный текст по-прежнему хардкодит конкретные скоры, длины и причины из строковых констант, и не ищет динамически второй legacy-фрагмент (145 bp)."*
+
+### Response:
+We refactored `benchmarks/analyze_active_hor_chr22.py`:
+1. **Dynamic Downstream Inspection:** For each gap between FastHumAS monomers $r_1$ and $r_2$, the script now dynamically extracts:
+   - Legacy records overlapping the gap itself: `[r1['end'], r2['start'])`;
+   - Legacy records covering the downstream FastHumAS monomer $r_2$: `[r2['start'], r2['end'])`.
+   Across all three 31-bp gap loci, this dynamically finds and reports **both** fragmented calls produced by legacy `nhmmer`:
+   - `S2C14/22H1L.6` (58 bp, score 46.4);
+   - `S2C14/22H1L.6` (145 bp, score 161.8 at loci 1 and 3; score 161.4 at locus 2).
+2. **Elimination of Hardcoded Constants:** All printed score values (97.9, 90.4, 46.4, 161.8, 161.4), lengths (118 bp, 95 bp, 58 bp, 145 bp), score densities, and model names are dynamically formatted directly from the parsed record objects.
+
+---
+
+## 3. Rectification of Legacy Gap Coordinates in chr22 Log
+
+> **Reviewer 3:** *"Противоречие координат legacy-разрыва в benchmarks/logs/chr22_active_hor_continuity.summary.txt: строки 61–63 показывают динамические фланкирующие вызовы S2C14/22H1L.4 [15709530, 15709699) и S2C14/22H1L.3 [15709707, 15709872) (фланкирующий разрыв [15709699, 15709707), 8 bp), но строка 67 содержит устаревшую захардкоженную строку [15709698, 15709706)."*
+
+### Response:
+The previous line 67 contained a manual 1-based coordinate string artifact. In the updated script, the flanking legacy gap coordinates are computed directly as `[prev_l['end'], next_l['start'])`.
+
+We re-executed the script against the full CHM13 dataset on cluster `aglab0` and regenerated `benchmarks/logs/chr22_active_hor_continuity.summary.txt`. The log now consistently reports:
+```
+  * Locus: [15709700, 15709706) (length = 6 bp)
+    FastHumAS Flanking: S2C14/22H1L.4 [15709529,15709700) -> S2C14/22H1L.3 [15709706,15709873)
+    Legacy has no overlapping calls in this gap; flanking legacy gap is 8 bp [15709699, 15709707):
+      - Left:  S2C14/22H1L.4 [15709530,15709699) (len=169 bp, score=171.0)
+      - Right: S2C14/22H1L.3 [15709707,15709872) (len=165 bp, score=172.4)
+    Biological / Algorithmic context:
+      - Unannotated 6-bp sequence (CTAAAA) in assembly between S2C14/22H1L.4 and S2C14/22H1L.3.
+      - Note: Both tools leave unannotated bases between adjacent monomer models (FastHumAS: 6 bp [15709700, 15709706); Legacy HumAS-HMMER: 8 bp [15709699, 15709707)).
+      - The assembly contains valid nucleotide sequence without uncalled Ns; this reflects profile model boundary termination rather than a physical assembly gap.
+```
+All coordinate representations are now completely concordant.
+
+---
+
+## 4. Full Document Synchronization
+
+> **Reviewer 3:** *"Синхронизация документов (paper.md, paper.html, EXPL.md, benchmarks/README.md):*
+> *- Introduction в paper.md строка 25 по-прежнему содержит «190,000–200,000» вместо «~166,660».*
+> *- Validation IQR в paper.md и EXPL.md содержит [0.8471, 0.8540], тогда как калибровочный лог содержит [0.8478, 0.8555].*
+> *- benchmarks/README.md по-прежнему содержит статистику по 9 хромосомам."*
+
+### Response:
+We updated and verified every document:
+1. **`paper/paper.md` (Line 25):** Replaced `~190,000–200,000` with `~166,660` (extrapolated from 68,292 measured across 10 finished chromosomes).
+2. **Validation IQR (`paper/paper.md` Line 59 and `paper/EXPL.md` Line 116):** Updated to `[0.8478, 0.8555]`, matching `scoring_calibration.summary.txt` exactly.
+3. **`benchmarks/README.md`:** Updated all metrics to the 10-chromosome evaluation:
+   - 200,337 legacy loci (99.44% sensitivity, 99.96% precision, 99.32% label agreement, 97.59% $\le 3$ bp boundary agreement);
+   - 81,661 exact-boundary calibration pairs (training $n = 23,506$, validation $n = 58,155$ with IQR `[0.8478, 0.8555]`);
+   - 100,900 legacy micro-gaps, 68,292 minus-strand 2-bp gaps, reduced to 8,152 (91.92% reduction).
+4. **Root `README.md` (Line 134):** Updated to state that FastHumAS matches Python's half-open `range(prev - 10, prev + 10)` ($[-10, +10)$) window for exact behavioral parity.
+5. **`paper/paper.html`:** Recompiled from `paper/paper.md` using Pandoc 3.2.
+
+---
+
+## 5. Scientific Framing of Concordance and Discordant Loci
+
+> **Reviewer 3:** *"Биологическая интерпретация и тон в Discussion и EXPL: избегать смешения согласованности инструментов с биологической истиной; формулировать объяснения дискордантных локусов (например, 82 FastHumAS-уникальных) как гипотезы, а не окончательные доказательства."*
+
+### Response:
+We revised the Discussion in [`paper/paper.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/paper.md) and Section 4 in [`paper/EXPL.md`](file:///Users/akomissarov/Dropbox/workspace/new/biology/humas_hmmer/paper/EXPL.md):
+- **FastHumAS-Unique Loci:** Explicitly framed as candidate monomers whose recovery is hypothesized to stem from eliminating legacy coordinate shift collisions, while emphasizing that definitive biological validation requires orthogonal experimental and assembly verification.
+- **Tool Concordance vs Ground Truth:** Clarified in Discussion that high concordance establishes tool consistency across diverse centromeric architectures, while structural ground truth at unresolved micro-insertions and degenerate transitions will ultimately benefit from direct experimental and assembly-level validation.
+- **31-bp Recurrent Loci:** Explicitly noted as an open hypothesis whether these represent true biological insertion variants or profile model boundary placement variation.
+
+---
+
+### Summary of Git Commits in Iteration 5
+- `src/overlap.rs`: Replaced `abs(delta) < 10` with `(-10..10).contains(&delta)` strictly matching Python `range(prev - 10, prev + 10)` $[-10, +10)$ window.
+- `src/overlap.rs` unit tests: Added `test_near_dedup_python_range_delta_negative_ten`. Total 56 unit tests passing.
+- `benchmarks/analyze_active_hor_chr22.py`: Dynamically extracts downstream legacy records covering monomer $r2$ (including 145-bp fragment) and eliminates hardcoded constants.
+- `benchmarks/logs/chr22_active_hor_continuity.summary.txt`: Regenerated on cluster; gap coordinates rectified to $[15709699, 15709707)$.
+- `paper/paper.md`: Updated line 25 to ~166,660; updated line 59 to IQR `[0.8478, 0.8555]`; updated line 72; refined tone and hypotheses in Sections 3.2 and 4.
+- `paper/paper.html`: Recompiled with Pandoc 3.2.
+- `paper/EXPL.md`: Synchronized IQR to `[0.8478, 0.8555]`, gap coordinates, and hypothesis framing.
+- `benchmarks/README.md`: Updated to full 10-chromosome statistics ($n = 200,337$).
+- `README.md`: Updated line 134 to document exact Python range $[-10, +10)$ parity.

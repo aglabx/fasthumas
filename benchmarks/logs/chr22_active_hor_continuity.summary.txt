@@ -18,53 +18,62 @@ Overlaps (< 0 bp)                       | 1                         | 0
 Detailed Investigation of Gaps > 3 bp in FastHumAS:
   * Locus: [12789031, 12789250) (length = 219 bp)
     FastHumAS Flanking: S2C14/22H1L.3 [12788860,12789031) -> S2C14/22H1L.2 [12789250,12789421)
-    Legacy overlapping records in this span (2 record(s)):
+    Legacy overlapping records in gap [12789031, 12789250) (2 record(s)):
       - S2C9H1L.7 [12789034,12789152), score=97.9, len=118 bp, score_density=0.830
       - S2C14/22H1L.3 [12789154,12789249), score=90.4, len=95 bp, score_density=0.952
-    Biological / Algorithmic context (chr22 pericentromeric boundary):
+    Legacy records covering downstream monomer S2C14/22H1L.2 [12789250,12789421) (1 record(s)):
+      - S2C14/22H1L.2 [12789251,12789419), score=140.2, len=168 bp, score_density=0.835
+    Biological / Algorithmic context:
       - Degenerate pericentromeric transition boundary near array start.
-      - Legacy nhmmer called two fragmented sub-monomers (S2C9H1L.7 [score 97.9, 118 bp] and S2C14/22H1L.3 [score 90.4, 95 bp]),
-        with score densities 0.830 and 0.952 (> 0.70 threshold). FastHumAS's Gotoh affine DP search against the active HOR model
-        did not yield a hit passing the seed/score filter in this degenerate region, leaving a 219-bp unannotated gap.
+      - Legacy nhmmer called fragmented sub-monomer(s) in this gap (S2C9H1L.7 (score 97.9, 118 bp, score_density 0.830), S2C14/22H1L.3 (score 90.4, 95 bp, score_density 0.952)).
+      - FastHumAS Gotoh affine DP search against active HOR models did not place a monomer passing seed/score filter in this degenerate region, leaving an unannotated gap.
   * Locus: [15478940, 15478971) (length = 31 bp)
     FastHumAS Flanking: S2C14/22H1L.7 [15478769,15478940) -> S2C14/22H1L.6 [15478971,15479148)
-    Legacy overlapping records in this span (1 record(s)):
+    Legacy overlapping records in gap [15478940, 15478971) (1 record(s)):
       - S2C14/22H1L.6 [15478941,15478999), score=46.4, len=58 bp, score_density=0.800
-    Biological / Algorithmic context (recurrent 31-bp inter-monomer locus):
+    Legacy records covering downstream monomer S2C14/22H1L.6 [15478971,15479148) (2 record(s)):
+      - S2C14/22H1L.6 [15478941,15478999), score=46.4, len=58 bp, score_density=0.800
+      - S2C14/22H1L.6 [15479001,15479146), score=161.8, len=145 bp, score_density=1.116
+    Biological / Algorithmic context:
       - Recurrent 31-bp unannotated sequence (CAACAAAAAGTGTTTTTCAAAACTGCTGTAT) between S2C14/22H1L.7 and S2C14/22H1L.6.
-      - FastHumAS Gotoh affine DP calls a full 177-bp canonical monomer, leaving 31 bp unannotated.
-      - Legacy nhmmer split the downstream monomer into two partial fragments (58 bp, score 46.4 and 145 bp, score 161.8).
-      - Note: Determining whether this 31-bp locus represents a true insertion variant or boundary placement variation
-        between profile models requires pairwise structural alignment against the canonical repeat unit.
+      - FastHumAS calls a single canonical monomer S2C14/22H1L.6 [15478971,15479148) (177 bp, score 161.9), leaving 31 bp unannotated.
+      - Legacy nhmmer split this downstream region into 2 fragmented sub-monomer calls: S2C14/22H1L.6 [15478941,15478999) (len=58 bp, score=46.4), S2C14/22H1L.6 [15479001,15479146) (len=145 bp, score=161.8).
+      - Note: Determining whether this 31-bp locus represents an insertion variant or alternative profile model boundary placement remains an open hypothesis requiring structural validation against the canonical repeat unit.
   * Locus: [15480341, 15480372) (length = 31 bp)
     FastHumAS Flanking: S2C14/22H1L.7 [15480170,15480341) -> S2C14/22H1L.6 [15480372,15480549)
-    Legacy overlapping records in this span (1 record(s)):
+    Legacy overlapping records in gap [15480341, 15480372) (1 record(s)):
       - S2C14/22H1L.6 [15480342,15480400), score=46.4, len=58 bp, score_density=0.800
-    Biological / Algorithmic context (recurrent 31-bp inter-monomer locus):
+    Legacy records covering downstream monomer S2C14/22H1L.6 [15480372,15480549) (2 record(s)):
+      - S2C14/22H1L.6 [15480342,15480400), score=46.4, len=58 bp, score_density=0.800
+      - S2C14/22H1L.6 [15480402,15480547), score=161.4, len=145 bp, score_density=1.113
+    Biological / Algorithmic context:
       - Recurrent 31-bp unannotated sequence (CAACAAAAAGTGTTTTTCAAAACTGCTGTAT) between S2C14/22H1L.7 and S2C14/22H1L.6.
-      - FastHumAS Gotoh affine DP calls a full 177-bp canonical monomer, leaving 31 bp unannotated.
-      - Legacy nhmmer split the downstream monomer into two partial fragments (58 bp, score 46.4 and 145 bp, score 161.8).
-      - Note: Determining whether this 31-bp locus represents a true insertion variant or boundary placement variation
-        between profile models requires pairwise structural alignment against the canonical repeat unit.
+      - FastHumAS calls a single canonical monomer S2C14/22H1L.6 [15480372,15480549) (177 bp, score 161.7), leaving 31 bp unannotated.
+      - Legacy nhmmer split this downstream region into 2 fragmented sub-monomer calls: S2C14/22H1L.6 [15480342,15480400) (len=58 bp, score=46.4), S2C14/22H1L.6 [15480402,15480547) (len=145 bp, score=161.4).
+      - Note: Determining whether this 31-bp locus represents an insertion variant or alternative profile model boundary placement remains an open hypothesis requiring structural validation against the canonical repeat unit.
   * Locus: [15488562, 15488593) (length = 31 bp)
     FastHumAS Flanking: S2C14/22H1L.7 [15488391,15488562) -> S2C14/22H1L.6 [15488593,15488770)
-    Legacy overlapping records in this span (1 record(s)):
+    Legacy overlapping records in gap [15488562, 15488593) (1 record(s)):
       - S2C14/22H1L.6 [15488563,15488621), score=46.4, len=58 bp, score_density=0.800
-    Biological / Algorithmic context (recurrent 31-bp inter-monomer locus):
+    Legacy records covering downstream monomer S2C14/22H1L.6 [15488593,15488770) (2 record(s)):
+      - S2C14/22H1L.6 [15488563,15488621), score=46.4, len=58 bp, score_density=0.800
+      - S2C14/22H1L.6 [15488623,15488768), score=161.8, len=145 bp, score_density=1.116
+    Biological / Algorithmic context:
       - Recurrent 31-bp unannotated sequence (CAACAAAAAGTGTTTTTCAAAACTGCTGTAT) between S2C14/22H1L.7 and S2C14/22H1L.6.
-      - FastHumAS Gotoh affine DP calls a full 177-bp canonical monomer, leaving 31 bp unannotated.
-      - Legacy nhmmer split the downstream monomer into two partial fragments (58 bp, score 46.4 and 145 bp, score 161.8).
-      - Note: Determining whether this 31-bp locus represents a true insertion variant or boundary placement variation
-        between profile models requires pairwise structural alignment against the canonical repeat unit.
+      - FastHumAS calls a single canonical monomer S2C14/22H1L.6 [15488593,15488770) (177 bp, score 161.9), leaving 31 bp unannotated.
+      - Legacy nhmmer split this downstream region into 2 fragmented sub-monomer calls: S2C14/22H1L.6 [15488563,15488621) (len=58 bp, score=46.4), S2C14/22H1L.6 [15488623,15488768) (len=145 bp, score=161.8).
+      - Note: Determining whether this 31-bp locus represents an insertion variant or alternative profile model boundary placement remains an open hypothesis requiring structural validation against the canonical repeat unit.
   * Locus: [15709700, 15709706) (length = 6 bp)
     FastHumAS Flanking: S2C14/22H1L.4 [15709529,15709700) -> S2C14/22H1L.3 [15709706,15709873)
-    Legacy has no overlapping calls; flanking legacy gap is 8 bp:
-      - Left:  S2C14/22H1L.4 [15709530,15709699)
-      - Right: S2C14/22H1L.3 [15709707,15709872)
-    Biological / Algorithmic context (unannotated inter-monomer sequence):
+    Legacy has no overlapping calls in this gap; flanking legacy gap is 8 bp [15709699, 15709707):
+      - Left:  S2C14/22H1L.4 [15709530,15709699) (len=169 bp, score=171.0)
+      - Right: S2C14/22H1L.3 [15709707,15709872) (len=165 bp, score=172.4)
+    Legacy records covering downstream monomer S2C14/22H1L.3 [15709706,15709873) (1 record(s)):
+      - S2C14/22H1L.3 [15709707,15709872), score=172.4, len=165 bp, score_density=1.045
+    Biological / Algorithmic context:
       - Unannotated 6-bp sequence (CTAAAA) in assembly between S2C14/22H1L.4 and S2C14/22H1L.3.
-      - Note: This is an unannotated inter-monomer sequence (valid genomic bases without Ns), NOT a physical assembly gap.
-        Legacy HumAS-HMMER similarly leaves an 8-bp unannotated gap [15709698, 15709706) at this exact locus.
+      - Note: Both tools leave unannotated bases between adjacent monomer models (FastHumAS: 6 bp [15709700, 15709706); Legacy HumAS-HMMER: 8 bp [15709699, 15709707)).
+      - The assembly contains valid nucleotide sequence without uncalled Ns; this reflects profile model boundary termination rather than a physical assembly gap.
 
 Detailed Investigation of Overlaps (< 0 bp):
   * Overlap: -1 bp between S2C14/22H1L.2 [12789250,12789421) and S2C20H5d.6 [12789420,12789591)

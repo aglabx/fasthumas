@@ -21,18 +21,19 @@ This directory contains the machine logs, run scripts, manifests, and validation
 
 ### Empirical Validation & Accuracy Scripts
 - `compare_fasthumas_vs_nhmmer.py`: Comprehensive concordance evaluator comparing FastHumAS with legacy HumAS-HMMER (nhmmer) across whole chromosomes.
-  - **Results on 9 finished CHM13 chromosomes (174,925 legacy loci):**
-    - Sensitivity (Recall): **99.37%** (173,827 / 174,925)
-    - Precision: **99.96%** (173,827 / 173,899)
-    - Strand agreement: **100.00%**
-    - Subfamily / HOR label agreement: **99.28%**
-    - Boundary concordance within $\le 3$ bp: **97.33%**; within $\le 10$ bp: **99.72%**
-- `calibrate_scoring.py`: Calibration script evaluating the empirical 0.85 scaling factor between Gotoh PSSM log-odds sums and HMMER bit scores across 58,183 exact-boundary monomers with a strict chromosome split:
-  - **Training set (chr1, chr3, chr8; $n = 23,527$):** Mean $0.8495 \pm 0.0074$ (SD), SEM $0.000048$, Median $0.8504$
-  - **Independent validation set (chr10, 11, 12, 14, 22, Y; $n = 34,656$):** Mean $0.8483 \pm 0.0085$ (SD), SEM $0.000046$, Median $0.8500$
+  - **Results on 10 finished CHM13 chromosomes (200,337 legacy loci):**
+    - Sensitivity (Recall): **99.44%** (199,220 / 200,337)
+    - Precision: **99.96%** (199,220 / 199,302)
+    - Strand agreement: **100.00%** (199,220 / 199,220)
+    - Subfamily / HOR label agreement: **99.32%** (197,874 / 199,220)
+    - Boundary concordance within $\le 3$ bp: **97.59%** (194,419 / 199,220); within $\le 10$ bp: **99.74%** (198,711 / 199,220)
+    - Exact 0-bp boundary identity: **41.11%** (81,909 / 199,220)
+- `calibrate_scoring.py`: Calibration script evaluating the empirical 0.85 scaling factor between Gotoh PSSM log-odds sums and HMMER bit scores across 81,661 exact-boundary monomers with a strict chromosome split:
+  - **Training set (chr1, chr3, chr8; $n = 23,506$):** Mean $0.8495 \pm 0.0074$ (SD), SEM $0.000048$, Median $0.8504$ (IQR: [0.8469, 0.8534])
+  - **Independent validation set (chr10, 11, 12, 14, 17, 22, Y; $n = 58,155$):** Mean $0.8505 \pm 0.0078$ (SD), SEM $0.000032$, Median $0.8522$ (IQR: [0.8478, 0.8555])
 - `analyze_junction_healing.py`: Analysis of inter-monomer junction gaps:
-  - Demonstrates that legacy HumAS-HMMER contained 99,561 micro-gaps (1–3 bp) across 9 chromosomes (56.9% of monomers), of which 68,211 (68.5%) were artificial 2-bp gaps on the minus strand resulting from the 1-bp coordinate offset in `hmmertblout2bed.awk` (~190,000–200,000 genome-wide).
-  - FastHumAS eliminates coordinate shifts and heals trimming artifacts, increasing flush abutting junctions (gap = 0 bp) from 32.7% to 93.0% and reducing micro-gaps by 92.1% (from 99,561 to 7,911), while preserving authentic biological insertions.
+  - Demonstrates that legacy HumAS-HMMER contained 100,900 micro-gaps (1–3 bp) across 10 chromosomes (50.37% of monomers), of which 68,292 (67.68%) were artificial 2-bp gaps on the minus strand resulting from the 1-bp coordinate offset in `hmmertblout2bed.awk` (~166,660 genome-wide).
+  - FastHumAS eliminates coordinate shifts and heals trimming artifacts, increasing flush abutting junctions (gap = 0 bp) from 40.41% (80,955) to 93.72% (186,770) and reducing micro-gaps by 91.92% (from 100,900 to 8,152), while preserving authentic biological insertions.
 - `compare_chm13_dp_fix.py`: Validates consistency before and after the Gotoh DP recurrence fix on CHM13 (488,636 concordant records, 99.976%).
 
 ### Machine Logs (`logs/`)
